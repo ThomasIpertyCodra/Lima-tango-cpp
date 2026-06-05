@@ -14,9 +14,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 //// TEMPLATE IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////////    
-namespace LimaDetector_ns
-{
-
 template <class F1, class F2>
 void LimaDetector::create_attribute(std::string name,
         int data_type,
@@ -61,7 +58,7 @@ void LimaDetector::create_attribute(std::string name,
     }
 
     //- add the dyn. attr. to the device
-    m_dim.dynamic_attributes_manager().add_attribute(dai);
+    m_dim->dynamic_attributes_manager().add_attribute(dai);
     DEBUG_STREAM << "LimaDetector::create_attribute() - [END]" << endl;
 }
 
@@ -90,10 +87,9 @@ void LimaDetector::create_command(std::string name,
     dci.ecb = yat4tango::DynamicCommandExecuteCallback::instanciate(*this,	execute_callback);
 
     //- add the dyn. attr. to the device
-    m_dim.dynamic_commands_manager().add_command(dci);
+    m_dim->dynamic_commands_manager().add_command(dci);
     DEBUG_STREAM << "LimaDetector::create_command() - [END]" << endl;
 }
 ////////////////////////////////////////////////////////////////////////////////////////  
-}
 
 #endif //

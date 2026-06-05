@@ -1,0 +1,694 @@
+<?xml version="1.0" encoding="ASCII"?>
+<pogoDsl:PogoSystem xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.esrf.fr/tango/pogo/PogoDsl">
+  <classes name="LimaDetector" pogoRevision="9.6">
+    <description description="Generic device intented to manage Detector via Lima Framework" title="Lima Device Generic" sourcePath="/home/informatique/ica/iperty/dev/Lima/applications/tango/cpp/src" language="Cpp" filestogenerate="XMI   file,Code files,Protected Regions" hasMandatoryProperty="false" hasConcreteProperty="true" hasAbstractCommand="false" hasAbstractAttribute="false">
+      <inheritances classname="Device_4Impl" sourcePath=""/>
+      <identification contact="at synchrotron-soleil.fr - arafat.noureddine" author="arafat.noureddine" emailDomain="synchrotron-soleil.fr" classFamily="Acquisition" siteSpecific="" platform="All Platforms" bus="Not Applicable" manufacturer="SOLEIL" reference=""/>
+    </description>
+    <deviceProperties name="AutoStartVideo" description="Allows calling automatically the ``Start`` command when:&lt;br>&#xA;- The device starts.&lt;br>&#xA;- After calling the ``Init`` command.">
+      <type xsi:type="pogoDsl:BooleanType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>false</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="AutoSaveResetRoi" description="Memorize the ``full frame`` automatically at the call of ``ResetRoi`` :&lt;br>&#xA;[default = false]">
+      <type xsi:type="pogoDsl:BooleanType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>false</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="DetectorDescription" description="Detector user-defined text to identify the engine.">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>This is my Simulator</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="DetectorType" description="Define the type of the connected Detector .&lt;BR>&#xA;Availables types :&lt;BR>&#xA;- AndorCCD&lt;BR>&#xA;- BaslerCCD&lt;BR>&#xA;- Dhyana&lt;br>&#xA;- Eiger&lt;br>&#xA;- Hamamatsu&lt;br>&#xA;- ImXpad&lt;br>&#xA;- Lambda&lt;br>&#xA;- MarCCD&lt;BR>&#xA;- Maxipix&lt;BR>&#xA;- Merlin&lt;BR>&#xA;- Pco&lt;BR>&#xA;- PerkinElmer&lt;BR>&#xA;- PilatusPixelDetector&lt;BR>&#xA;- PrincetonCCD&lt;BR>&#xA;- TeledynePI&lt;BR>&#xA;- SimulatorCCD&lt;BR>&#xA;- SlsEiger&lt;BR>&#xA;- SlsJungfrau&lt;BR>&#xA;- SpectralInstrument&lt;BR>&#xA;- SpectrumOneCCD&lt;BR>&#xA;- Ufxc&lt;BR>&#xA;- UviewCCD&lt;BR>&#xA;- XpadPixelDetector&lt;BR>">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>SimulatorCCD</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="DetectorPixelDepth" description="Define the pixel depth of the detector : &lt;br>&#xA;Availables values : &lt;br>&#xA;- 8 &lt;br>&#xA;- 12&lt;br>&#xA;- 16&lt;br>&#xA;- 16S&lt;br>&#xA;- 24&lt;br>&#xA;- 24S&lt;br>&#xA;- 32&lt;br>&#xA;- 32S&lt;br>">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>16</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="SpecialDisplayType" description="Special type of the image attribute for display and saving (NOT_USED, FLOAT, ...)">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>NOT_USED</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="DetectorVideoMode" description="Define the format of video stream: &lt;br>&#xA;Availables values :&lt;br>&#xA;- NONE&lt;BR>&#xA;- Y8 &lt;BR>&#xA;- Y16&lt;BR>&#xA;- Y32&lt;BR>&#xA;- Y64&lt;BR>&#xA;- RGB555&lt;BR>&#xA;- RGB565&lt;BR>&#xA;- RGB24&lt;BR>&#xA;- RGB32&lt;BR>&#xA;- BGR24&lt;BR>&#xA;- BGR32&lt;BR>&#xA;- BAYER_RG8&lt;BR>&#xA;- BAYER_RG16&lt;BR>&#xA;- I420&lt;BR>&#xA;- YUV411&lt;BR>&#xA;- YUV422&lt;BR>&#xA;- YUV444&lt;BR>&#xA;&lt;br>&#xA;Nota:&lt;br>&#xA;This property is usefull only for detectors having video capabilities.&lt;BR>&#xA;Otherwise, use only NONE.">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>NONE</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="ImageSource" description="Choose the source of Data given to the image attribute :&lt;br>&#xA;- VIDEO : use ctVideo->LastImage()&lt;br>&#xA;- ACQUISITION : use ctControl->ReadImage()">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>VIDEO</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="ImageOpMode" description="Define ImageOpMode for Roi/Binning/etc...  :&lt;br>&#xA;Availables values :&lt;br>&#xA;- HardOnly&lt;br>&#xA;- SoftOnly&lt;br>&#xA;- HardAndSoft&lt;br>">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>HardAndSoft</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FileFormat" description="Define the format of image files :&lt;BR>&#xA;Availables values :&lt;br>&#xA;- EDF&lt;BR>&#xA;- NXS&lt;BR>&#xA;- RAW&lt;BR>">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>NXS</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FilePrefix" description="Define the prefix used for the image files name.">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>Image</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FileIndexPattern" description="Define the pattern of the index used for image files names.&lt;br>&#xA;&lt;br>&#xA;Nota :&lt;br>&#xA;%04d mean that file name index will be end with exactly  4 digits filled by `0` if necessary .&lt;br>">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>%06d</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FileTargetPath" description="Define the Path where Files will be generated, only when savingFile is checked.">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>./data</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FileNbFrames" description="Define the nombre of frames to push in each saving file.">
+      <type xsi:type="pogoDsl:IntType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>1</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FileManagedMode" description="Define the File managed Mode :&lt;br>&#xA;- HARDWARE : &lt;br>&#xA;- SOFTWARE  : &lt;br>">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>SOFTWARE</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FileWriteMode" description="Available only for Nexus format : set the SetWriteMode(). &lt;br>&#xA;Available values :&lt;br>&#xA;- ASYNCHRONOUS&lt;br>&#xA;- SYNCHRONOUS&lt;br>&#xA;- DELAYED">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>ASYNCHRONOUS</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FileMemoryMode" description="Available only for Nexus format : set the SetDataItemMemoryMode().&lt;br>&#xA;Available values :&lt;br>&#xA;- COPY&lt;br>&#xA;- NO_COPY">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>COPY</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="FileTimestampEnabled" description="Define wether the timestamp is requested in the Nexus file or not&lt;br>">
+      <type xsi:type="pogoDsl:BooleanType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>true</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="DebugModules" description="Define modules that we need to have some debug traces.&lt;BR>&#xA;Availables values :&lt;BR>&#xA;- None&lt;BR>&#xA;- Hardware&lt;BR>&#xA;- Control&lt;BR>&#xA;- Common&lt;BR>&#xA;- Camera&lt;BR>">
+      <type xsi:type="pogoDsl:StringVectorType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>Hardware</DefaultPropValue>
+      <DefaultPropValue>Control</DefaultPropValue>
+      <DefaultPropValue>Common</DefaultPropValue>
+      <DefaultPropValue>Camera</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="DebugLevels" description="Define Lima verbose level of traces.&lt;BR>&#xA;Availables values :&lt;BR>&#xA;- Fatal&lt;BR>&#xA;- Error&lt;BR>&#xA;- Warning&lt;BR>&#xA;- Trace&lt;BR>&#xA;- Funct&lt;BR>&#xA;- Param&lt;BR>&#xA;- Return&lt;BR>&#xA;- Always&lt;BR>">
+      <type xsi:type="pogoDsl:StringVectorType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>Fatal</DefaultPropValue>
+      <DefaultPropValue>Error</DefaultPropValue>
+      <DefaultPropValue>Warning</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="DebugFormats" description="Define Lima traces format.&lt;BR>&#xA;Availables values :&lt;BR>&#xA;- DateTime&lt;BR>&#xA;- Thread&lt;BR>&#xA;- Module&lt;BR>&#xA;- Obj&lt;BR>&#xA;- Funct&lt;BR>&#xA;- FileLine&lt;BR>">
+      <type xsi:type="pogoDsl:StringVectorType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>DateTime</DefaultPropValue>
+      <DefaultPropValue>Module</DefaultPropValue>
+      <DefaultPropValue>Type</DefaultPropValue>
+      <DefaultPropValue>Funct</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="ExpertBufferMaxMemoryPercent" description="Define the Percent of Memory reserved to Lima buffer control.&lt;br>&#xA;BufferMaxMemoryPercent = 70, allow a Memory of 1.4 Go. (Default)&lt;br>&#xA;BufferMaxMemoryPercent = 100, allow a Memory of 2 Go. (Maximum)">
+      <type xsi:type="pogoDsl:UShortType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>70</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="ExpertNbPoolThread" description="Defines the number of threads dedicated to process images in the ProcessLib">
+      <type xsi:type="pogoDsl:UShortType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>4</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="ExpertTimeoutCmd" description="Define the Timeout (in ms) for some commands (snap/start/stop/prepare).&lt;br>">
+      <type xsi:type="pogoDsl:UIntType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>5000</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="ExpertAllowMixedRoiBinning" description="Define whether the simultaneous use of binning and ROI is allowed">
+      <type xsi:type="pogoDsl:BooleanType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>true</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="ExpertEnableHardwareSync" description="Define if the device should read hardware values">
+      <type xsi:type="pogoDsl:BooleanType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>false</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedRoi" description="Memorize/Define the Region of Interest of the Acquisition: &lt;br>&#xA;origin X&lt;br>&#xA;origin Y&lt;br>&#xA;Width&lt;br>&#xA;Height&lt;br>&#xA;&lt;br>&#xA;Nota:&lt;br>&#xA;if any roi value is &lt;0, then we consider all detector area as Roi.">
+      <type xsi:type="pogoDsl:ShortVectorType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>-1</DefaultPropValue>
+      <DefaultPropValue>-1</DefaultPropValue>
+      <DefaultPropValue>-1</DefaultPropValue>
+      <DefaultPropValue>-1</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedBinningH" description="Memorize/Define the Binning Horizontal value of the Acquisition&lt;br>">
+      <type xsi:type="pogoDsl:UShortType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>1</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedBinningV" description="Memorize/Define the Binning Vertical value of the Acquisition&lt;br>">
+      <type xsi:type="pogoDsl:UShortType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>1</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedAcquisitionMode" description="Memorize/Define the acquisitionMode attribute at Init device&lt;br>&#xA;Availables values :&lt;br>&#xA;- SINGLE&lt;br>&#xA;- ACCUMULATION&lt;br>">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>SINGLE</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedTriggerMode" description="Memorize/Define the triggerMode attribute at Init device&lt;br>&#xA;Availables values :&lt;br>&#xA;- INTERNAL_SINGLE&lt;br>&#xA;- EXTERNAL_SINGLE&lt;br>&#xA;- EXTERNAL_MULTI&lt;br>&#xA;- EXTERNAL_GATE&lt;br>&#xA;- INTERNAL_MULTI&lt;br>&#xA;- EXTERNAL_START_STOP&lt;br>&#xA;- EXTERNAL_READOUT&lt;br>">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>INTERNAL_SINGLE</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedShutterMode" description="Memorize/Define the shutterMode attribute at Init device&lt;br>&#xA;Availables values :&lt;br>&#xA;- MANUAL&lt;br>&#xA;- AUTO_FRAME&lt;br>&#xA;- AUTO_SEQUENCE">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>MANUAL</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedShutterOpenTime" description="Memorize/Define the shutterOpenTime attribute at Init device&lt;br>">
+      <type xsi:type="pogoDsl:DoubleType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>1000</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedShutterCloseTime" description="Memorize/Define the shutterCloseTime attribute at Init device&lt;br>">
+      <type xsi:type="pogoDsl:DoubleType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>1000</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedExposureTime" description="Memorize/Define the exposureTime attribute  at Init device&lt;br>">
+      <type xsi:type="pogoDsl:DoubleType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>1000</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedExposureAccTime" description="Memorize/Define the exposureAccTime attribute at Init device&lt;br>">
+      <type xsi:type="pogoDsl:DoubleType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>100</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedLatencyTime" description="Memorize/Define the latencyTime attribute  at Init device&lt;br>">
+      <type xsi:type="pogoDsl:DoubleType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>0</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedNbFrames" description="Memorize/Define the nbFrames attribute  at Init device&lt;br>">
+      <type xsi:type="pogoDsl:IntType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>1</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedFileGeneration" description="Memorize/Define the fileGeneration attribute at Init device&lt;br>">
+      <type xsi:type="pogoDsl:BooleanType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>false</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="MemorizedFileNbFrames" description="">
+      <type xsi:type="pogoDsl:IntType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </deviceProperties>
+    <deviceProperties name="SpoolID" description="">
+      <type xsi:type="pogoDsl:StringType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>TO_BE_DEFINED</DefaultPropValue>
+    </deviceProperties>
+    <commands name="State" description="This command gets the device state (stored in its &lt;i>device_state&lt;/i> data member) and returns it to the caller." execMethod="dev_state" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="none.">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="State Code">
+        <type xsi:type="pogoDsl:StateType"/>
+      </argout>
+      <status abstract="true" inherited="true" concrete="true" concreteHere="true"/>
+    </commands>
+    <commands name="Status" description="This command gets the device status (stored in its &lt;i>device_status&lt;/i> data member) and returns it to the caller." execMethod="dev_status" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="none.">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="Status description">
+        <type xsi:type="pogoDsl:ConstStringType"/>
+      </argout>
+      <status abstract="true" inherited="true" concrete="true" concreteHere="false"/>
+    </commands>
+    <commands name="Prepare" description="Prepare the acquisition (Apply parameters like bin/roi/exposure/.. &amp; allocate buffers &amp; ...)" execMethod="prepare" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+    </commands>
+    <commands name="Snap" description="Starts the acquisition of a number of frames equal to  'nbFrames' attribute value." execMethod="snap" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+    </commands>
+    <commands name="Start" description="Starts a &quot;video/live&quot; acquisition of an infinite number of frames.&lt;br>&#xA;In this mode, In this mode, the frame loss is permitted and not signaled as FAULT in the device state&lt;br>&#xA;It is not allowed to generate files in this mode." execMethod="start" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+    </commands>
+    <commands name="Stop" description="Stop current acquisition/video." execMethod="stop" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+    </commands>
+    <commands name="SetROI" description="Define a Region of Interest . (OriginX, OriginY, Width, Height)&lt;br>&#xA;Roi and Binning are associated." execMethod="set_roi" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="[origin_x, origin_y, width, height]">
+        <type xsi:type="pogoDsl:UIntArrayType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="SetBinning" description="Define a binning Horizontal (x) &amp; Vertical (y) for the image. &lt;br>" execMethod="set_binning" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:UIntArrayType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="ResetBinning" description="Use the binning Hrizontal=1 &amp; Verical=1 of the detector according to current Roi." execMethod="reset_binning" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="ResetROI" description="Use the full frame of the detector according to current Binning." execMethod="reset_roi" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="GetAttributeAvailableValues" description="Return a list of string containing all available values of a DevString attribute." execMethod="get_attribute_available_values" displayLevel="EXPERT" polledPeriod="0">
+      <argin description="Attribute name">
+        <type xsi:type="pogoDsl:StringType"/>
+      </argin>
+      <argout description="List of strings containing the available values">
+        <type xsi:type="pogoDsl:StringArrayType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="GetAvailableCapabilities" description="Return a list of string containing all available capabilitiesof the detector :&lt;br>&#xA;- Roi&lt;br>&#xA;- Binning&lt;br>&#xA;- Trigger&lt;br>&#xA;- Shutter&lt;br>&#xA;- Event Errors&lt;br>&#xA;- ...&lt;br>" execMethod="get_available_capabilities" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="The list of available capabilities">
+        <type xsi:type="pogoDsl:StringArrayType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="ResetFileIndex" description="Reset the file index" execMethod="reset_file_index" displayLevel="EXPERT" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="ReloadROI" description="This command allows reloading the last ROI values set using the SetROI command." execMethod="reload_roi" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="GetDataStreams" description="Returns the flyscan data streams associated with this device." execMethod="get_data_streams" displayLevel="OPERATOR" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:StringArrayType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <commands name="InitInterface" description="Re-inits the LimaDetector interface. Allows to recreate some dynamics attributes." execMethod="init_interface" displayLevel="EXPERT" polledPeriod="0">
+      <argin description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <excludedStates>INIT</excludedStates>
+      <excludedStates>FAULT</excludedStates>
+      <excludedStates>RUNNING</excludedStates>
+    </commands>
+    <attributes name="detectorDescription" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Detector user-defined text to identify the engine." label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="detectorType" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Return the type of the Detector." label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="detectorModel" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Return the model of the Detector." label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="detectorWidthMax" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Maximum width" label="" unit=" " standardUnit="" displayUnit="" format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="detectorHeightMax" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Maximum height" label="" unit=" " standardUnit="" displayUnit="" format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="detectorPixelDepth" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Pixel resolution in bits:&lt;br>\n8&lt;br>\n16&lt;br>\n32&lt;br>" label="" unit=" " standardUnit=" " displayUnit=" " format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="binnedWidthMax" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Detector max width taking into account the current Horizontal Binning." label="" unit=" " standardUnit=" " displayUnit=" " format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="binnedHeightMax" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Detector max width taking into account the current Vertical Binning." label="" unit=" " standardUnit=" " displayUnit=" " format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="triggerMode" attType="Scalar" rwType="READ_WRITE" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Available Trigger Modes :&lt;br>\nINTERNAL_SINGLE&lt;br>\nEXTERNAL_SINGLE&lt;br>\nEXTERNAL_MULTI&lt;br>\nEXTERNAL_GATE&lt;br>\nINTERNAL_MULTI&lt;br>\nEXTERNAL_START_STOP&lt;br>\nEXTERNAL_READOUT&lt;br>" label="" unit=" " standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="acquisitionMode" attType="Scalar" rwType="READ_WRITE" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Available Acquisition Modes :&lt;br>\nSINGLE&lt;br>\nACCUMULATION&lt;br>\n" label="" unit=" " standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="exposureTime" attType="Scalar" rwType="READ_WRITE" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:DoubleType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Set/Get exposure time (in ms).&lt;br>\nNota : &lt;br>\nIn video mode (acquisition launched by Start), exposure time can be changed during acquistion." label="" unit="ms" standardUnit="ms" displayUnit="ms" format="%7.2f" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+    </attributes>
+    <attributes name="latencyTime" attType="Scalar" rwType="READ_WRITE" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:DoubleType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Set/Get latency time (in ms).&lt;br>" label="" unit="ms" standardUnit="ms" displayUnit="ms" format="%7.2f" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+    </attributes>
+    <attributes name="frameRate" attType="Scalar" rwType="READ_WRITE" displayLevel="EXPERT" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:DoubleType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="" label="" unit="frame/s" standardUnit="frame/s" displayUnit="frame/s" format="%7.2f" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+    </attributes>
+    <attributes name="roiX" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Region of Interest . (Origin X)" label="" unit=" " standardUnit="" displayUnit="" format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="roiY" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Region of Interest . (Origin Y)" label="" unit=" " standardUnit="" displayUnit="" format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="roiWidth" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Region of Interest . (Width)" label="" unit=" " standardUnit="" displayUnit="" format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="roiHeight" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Region of Interest . (Height)" label="" unit=" " standardUnit="" displayUnit="" format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="binningH" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Current Binning Horizontal value" label="" unit=" " standardUnit="" displayUnit="" format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="binningV" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UShortType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Current Binning Vertical value" label="" unit=" " standardUnit="" displayUnit="" format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="nbFrames" attType="Scalar" rwType="READ_WRITE" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:IntType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Define the number of frames to acquire.&lt;br>\nAvailable only in acqusisition mode, i.e SNAP.&lt;br>\nIn live mode, i.e START it is forced to 0, this means that we request an infinite number of frames." label="" unit=" " standardUnit=" " displayUnit=" " format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="currentFrame" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:UIntType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Display the current frame number." label="" unit=" " standardUnit=" " displayUnit=" " format="%6d" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="fileGeneration" attType="Scalar" rwType="READ_WRITE" displayLevel="EXPERT" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:BooleanType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Allow to save grabbed frames into a file on disk.&lt;br>\nAvailable formats for the file are:  EDF, RAW, NXS&lt;br>\nThe format is fixed in FileFormat property.&lt;br>" label="" unit=" " standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="fileFormat" attType="Scalar" rwType="READ_WRITE" displayLevel="EXPERT" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="File format that will be used for saving.\nAvailable format are:\n- NXS\n- EDF\n- RAW\n- HDF5" label="" unit=" " standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="filePrefix" attType="Scalar" rwType="READ_WRITE" displayLevel="EXPERT" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="" label="" unit=" " standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="fileTargetPath" attType="Scalar" rwType="READ_WRITE" displayLevel="EXPERT" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="" label="" unit=" " standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="fileNbFrames" attType="Scalar" rwType="READ_WRITE" displayLevel="EXPERT" polledPeriod="0" maxX="0" maxY="0" memorized="true">
+      <dataType xsi:type="pogoDsl:IntType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="" label="" unit=" " standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <attributes name="fileExtension" attType="Scalar" rwType="READ" displayLevel="EXPERT" polledPeriod="0" maxX="0" maxY="0">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Display the actual extension that will be used for saving files, according to the chosen file format" label="" unit=" " standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+    </attributes>
+    <attributes name="operationsList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="1024" maxY="0">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Enumerate all active 'post processing' operations on the image." label="" unit=" " standardUnit=" " displayUnit=" " format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <readExcludedStates>INIT</readExcludedStates>
+      <readExcludedStates>FAULT</readExcludedStates>
+      <readExcludedStates>RUNNING</readExcludedStates>
+    </attributes>
+    <states name="INIT" description="Error occured at the initialization of the device.&lt;br>&#xA;It is mandatory to fix the errors and run the [ Init ] command of the LimaDetector device.&lt;br>&#xA;The [ Snap ] command IS NOT available.&lt;br>&#xA;The [ Start ] command IS NOT available.&lt;br>&#xA;The [ Stop ] command IS NOT available.&lt;br>&#xA;The [ SetRoi ] command IS NOT available.&lt;br>&#xA;The [ SetBinning ] command IS NOT available.&lt;br>">
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </states>
+    <states name="STANDBY" description="The Device is Waiting for a user request.&lt;br>&#xA;The [ Snap ] command IS available.&lt;br>&#xA;The [ Start ] command IS available.&lt;br>&#xA;The [ Stop ] command IS available.&lt;br>&#xA;The [ SetRoi ] command IS available.&lt;br>&#xA;The [ SetBinning ] command IS available.&lt;br>">
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </states>
+    <states name="FAULT" description="Acquisition/Settings of the detector encounter a problem.&lt;BR>&#xA;The [ Snap ] command IS available.&lt;br>&#xA;The [ Start ] command IS available.&lt;br>&#xA;The [ Stop ] command IS available.&lt;br>&#xA;The [ SetRoi ] command IS available.&lt;br>&#xA;The [ SetBinning ] command IS available.&lt;br>">
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </states>
+    <states name="RUNNING" description="The Acquisition is in Progress.&lt;br>&#xA;The [ Snap ] command IS NOT available.&lt;br>&#xA;The [ Start ] command IS NOT available.&lt;br>&#xA;The [ Stop ] command IS available.&lt;br>&#xA;The [ SetRoi ] command IS NOT available.&lt;br>&#xA;The [ SetBinning ] command IS NOT available.&lt;br>">
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </states>
+    <preferences docHome="../doc/doc_html" makefileHome="$(TANGO_HOME)"/>
+  </classes>
+</pogoDsl:PogoSystem>
