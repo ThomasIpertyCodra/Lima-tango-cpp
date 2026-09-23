@@ -40,8 +40,12 @@ static const char *RcsId = "$Id:  $";
 //=============================================================================
 
 
+#include <tango.h>
+#include <PogoHelper.h>
 #include <Layout.h>
 #include <LayoutClass.h>
+
+using namespace std;
 
 /*----- PROTECTED REGION END -----*/	//	Layout.cpp
 
@@ -123,10 +127,15 @@ void Layout::delete_device()
 {
 	DEBUG_STREAM << "Layout::delete_device() " << device_name << endl;
 	/*----- PROTECTED REGION ID(Layout::delete_device) ENABLED START -----*/
-	
-	//	Delete device allocated objects
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::delete_device
+
+    INFO_STREAM << "Layout::delete_device() delete device " << device_name << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    //    Delete device allocated objects
+	DELETE_DEVSTRING_ATTRIBUTE(attr_version_read);
+    DELETE_DEVSTRING_ATTRIBUTE(attr_operationType_read);
+    DELETE_DEVSTRING_ATTRIBUTE(attr_operationValue_read);
+
+/*----- PROTECTED REGION END -----*/	//	Layout::delete_device
 }
 
 //--------------------------------------------------------
@@ -139,10 +148,13 @@ void Layout::init_device()
 {
 	DEBUG_STREAM << "Layout::init_device() create device " << device_name << endl;
 	/*----- PROTECTED REGION ID(Layout::init_device_before) ENABLED START -----*/
-	
-	//	Initialization before get_device_property() call
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::init_device_before
+
+    INFO_STREAM << "Layout::init_device() create device " << device_name << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    // Initialise variables to default values
+    //--------------------------------------------
+
+/*----- PROTECTED REGION END -----*/	//	Layout::init_device_before
 	
 
 	//	Get the device properties from database
@@ -150,10 +162,104 @@ void Layout::init_device()
 	
 
 	/*----- PROTECTED REGION ID(Layout::init_device) ENABLED START -----*/
+
 	
-	//	Initialize device
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::init_device
+	CREATE_DEVSTRING_ATTRIBUTE(attr_version_read, MAX_ATTRIBUTE_STRING_LENGTH);
+    CREATE_DEVSTRING_ATTRIBUTE(attr_operationType_read, MAX_ATTRIBUTE_STRING_LENGTH);
+    CREATE_DEVSTRING_ATTRIBUTE(attr_operationValue_read, MAX_ATTRIBUTE_STRING_LENGTH);
+
+    //By default INIT, need to ensure that all objets are OK before set the device to STANDBY
+    set_state(Tango::INIT);
+    m_is_device_initialized = false;
+    m_status_message.str("");
+	m_mapOperations.clear();
+    m_layout_tasks.clear();
+    m_ct = 0;
+
+    try
+    {
+        //- get the main object used to pilot the lima framework
+        //in fact LimaDetector is create the singleton control objet
+        //so this call, will only return existing object!
+        m_ct = ControlFactory::instance().get_control("Layout");
+    }
+    catch (Exception& e)
+    {
+        INFO_STREAM << "Initialization Failed 1: " << e.getErrMsg() << endl;
+        m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+        m_is_device_initialized = false;
+        set_state(Tango::FAULT);
+        return;
+    }
+    catch (...)
+    {
+        INFO_STREAM << "Initialization Failed : UNKNOWN" << endl;
+        m_status_message << "Initialization Failed : UNKNOWN" << endl;
+        set_state(Tango::FAULT);
+        m_is_device_initialized = false;
+        return;
+    }
+
+    m_is_device_initialized = true;
+
+    //write at init, only if device is correctly initialized
+    if (m_is_device_initialized)
+    {
+        try
+        {
+            for (int i = 0; i < memorizedOperationTypes.size(); i++)
+            {
+                INFO_STREAM << "Write tango hardware at Init - operationType." << endl;
+                Tango::WAttribute &operationType = dev_attr->get_w_attr_by_name("operationType");
+                m_operationType = memorizedOperationTypes.at(i);
+                strcpy(*attr_operationType_read, m_operationType.c_str());
+                operationType.set_write_value(m_operationType);
+                write_operationType(operationType);
+
+                // write operationValue At Init
+                INFO_STREAM << "Write tango hardware at Init - operationValue." << endl;
+                Tango::WAttribute &operationValue = dev_attr->get_w_attr_by_name("operationValue");
+                m_operationValue = memorizedOperationValues.at(i);
+                strcpy(*attr_operationValue_read, m_operationValue.c_str());
+                operationValue.set_write_value(m_operationValue);
+                write_operationValue(operationValue);
+
+                // AddOp()
+                INFO_STREAM << "Write tango hardware at Init - Add Operations to the processLib." << endl;
+                add_external_operation(memorizedOperationLevels.at(i));
+            }
+        }
+		catch(ProcessException& p)
+		{
+            INFO_STREAM << "Initialization Failed : " << p.getErrMsg() << endl;
+            m_status_message << "Initialization Failed : " << p.getErrMsg( ) << endl;
+            m_is_device_initialized = false;
+            set_state(Tango::FAULT);
+            return;
+		}
+        catch (Exception& e)
+        {
+            INFO_STREAM << "Initialization Failed : " << e.getErrMsg() << endl;
+            m_status_message << "Initialization Failed : " << e.getErrMsg( ) << endl;
+            m_is_device_initialized = false;
+            set_state(Tango::FAULT);
+            return;
+        }
+        catch (Tango::DevFailed& df)
+        {
+            ERROR_STREAM << df << endl;
+            INFO_STREAM << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+            m_status_message << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+            m_is_device_initialized = false;
+            set_state(Tango::FAULT);
+            return;
+        }
+    }
+
+    set_state(Tango::STANDBY);
+    dev_state();
+
+/*----- PROTECTED REGION END -----*/	//	Layout::init_device
 }
 
 //--------------------------------------------------------
@@ -165,10 +271,11 @@ void Layout::init_device()
 void Layout::get_device_property()
 {
 	/*----- PROTECTED REGION ID(Layout::get_device_property_before) ENABLED START -----*/
-	
-	//	Initialize property data members
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::get_device_property_before
+
+    //	Initialize your default values here (if not done with  POGO).
+    //------------------------------------------------------------------
+
+/*----- PROTECTED REGION END -----*/	//	Layout::get_device_property_before
 
 
 	//	Read device properties from database.
@@ -226,10 +333,18 @@ void Layout::get_device_property()
 	}
 
 	/*----- PROTECTED REGION ID(Layout::get_device_property_after) ENABLED START -----*/
-	
-	//	Check device property data members init
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::get_device_property_after
+
+    std::vector<std::string> myVector;
+    myVector.push_back("NONE");
+    yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, myVector, "MemorizedOperationTypes");
+    myVector.clear();
+    myVector.push_back("0");
+    yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, myVector, "MemorizedOperationValues");
+    myVector.clear();
+    myVector.push_back("0");
+    yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, myVector, "MemorizedOperationLevels");
+
+/*----- PROTECTED REGION END -----*/	//	Layout::get_device_property_after
 }
 
 //--------------------------------------------------------
@@ -242,10 +357,38 @@ void Layout::always_executed_hook()
 {
 	INFO_STREAM << "Layout::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(Layout::always_executed_hook) ENABLED START -----*/
-	
-	//	code always executed before all requests
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::always_executed_hook
+
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        if(!m_is_device_initialized)//nothing to do ! device need init
+            return;
+
+        //- get the singleton control objet used to pilot the lima framework
+        m_ct = ControlFactory::instance().get_control("Layout");
+
+        dev_state();
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << e.getErrMsg() << endl;
+        m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+        //- throw exception
+        set_state(Tango::FAULT);
+        m_is_device_initialized = false;
+        return;
+    }
+    catch (Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        INFO_STREAM << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+        m_status_message << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+        m_is_device_initialized = false;
+        set_state(Tango::FAULT);
+        return;
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Layout::always_executed_hook
 }
 
 //--------------------------------------------------------
@@ -258,10 +401,12 @@ void Layout::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
 	DEBUG_STREAM << "Layout::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(Layout::read_attr_hardware) ENABLED START -----*/
-	
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::read_attr_hardware
+
+
+    DEBUG_STREAM << "Layout::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
+    //	Add your own code here
+
+/*----- PROTECTED REGION END -----*/	//	Layout::read_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -277,10 +422,25 @@ void Layout::read_version(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Layout::read_version(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Layout::read_version) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_version_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::read_version
+
+	DEBUG_STREAM << "Layout::read_version(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		strcpy(*attr_version_read, CURRENT_VERSION);
+		attr.set_value(attr_version_read);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"Layout::read_version()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Layout::read_version
 }
 //--------------------------------------------------------
 /**
@@ -295,10 +455,25 @@ void Layout::read_operationType(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Layout::read_operationType(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Layout::read_operationType) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationType_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::read_operationType
+
+    DEBUG_STREAM << "Layout::read_operationType(Tango::Attribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        attr.set_value(attr_operationType_read);
+    }
+    catch (Tango::DevFailed& df)
+    {
+
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          std::string(df.errors[0].desc).c_str(),
+                                          "Layout::read_operationType");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Layout::read_operationType
 }
 //--------------------------------------------------------
 /**
@@ -316,9 +491,61 @@ void Layout::write_operationType(Tango::WAttribute &attr)
 	Tango::DevString	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Layout::write_operationType) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::write_operationType
+
+    DEBUG_STREAM << "Layout::write_operationType(Tango::WAttribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        m_operationType = *attr_operationType_read; //memorize previous valid value
+        attr.get_write_value(attr_operationType_write);
+        std::string current = attr_operationType_write;
+        transform(current.begin(), current.end(), current.begin(), ::toupper);
+        if ((current != "+") &&
+            (current != "-") &&
+            (current != "*") &&
+            (current != "/") &&
+            (current != ">>") &&
+            (current != "<<") &&
+            (current != "FLIP") &&
+			(current != "ROTATION") &&
+			(current != "CIRPAD_2X10") &&
+			(current != "CIRPAD_4X5") &&
+            (current != "NONE")
+            )
+        {
+            attr_operationType_write = const_cast<Tango::DevString>(m_operationType.c_str());
+            Tango::Except::throw_exception("CONFIGURATION_ERROR",
+                                           "Possible operationType values are:"
+                                           "\n+"
+                                           "\n-"
+                                           "\n*"
+                                           "\n/"
+                                           "\n>>"
+                                           "\n<<"
+                                           "\nFLIP"
+										   "\nROTATION"
+										   "\nCIRPAD_2X10"
+										   "\nCIRPAD_4X5"
+                                           "\nNONE",
+                                           "Layout::write_operationType");
+        }
+
+        //- THIS IS AN AVAILABLE operationType
+        m_operationType = current;
+        strcpy(*attr_operationType_read, current.c_str());
+    }
+    catch (Tango::DevFailed& df)
+    {
+
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          std::string(df.errors[0].desc).c_str(),
+                                          "Layout::write_operationType");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Layout::write_operationType
 }
 //--------------------------------------------------------
 /**
@@ -333,10 +560,25 @@ void Layout::read_operationValue(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Layout::read_operationValue(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Layout::read_operationValue) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationValue_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::read_operationValue
+
+    DEBUG_STREAM << "Layout::read_operationValue(Tango::Attribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        attr.set_value(attr_operationValue_read);
+    }
+    catch (Tango::DevFailed& df)
+    {
+
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          std::string(df.errors[0].desc).c_str(),
+                                          "Layout::read_operationValue");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Layout::read_operationValue
 }
 //--------------------------------------------------------
 /**
@@ -354,9 +596,28 @@ void Layout::write_operationValue(Tango::WAttribute &attr)
 	Tango::DevString	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Layout::write_operationValue) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::write_operationValue
+
+    DEBUG_STREAM << "Layout::write_operationValue(Tango::WAttribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        attr.get_write_value(attr_operationValue_write);
+        m_operationValue = attr_operationValue_write;
+        transform(m_operationValue.begin(), m_operationValue.end(), m_operationValue.begin(), ::toupper);
+        strcpy(*attr_operationValue_read, m_operationValue.c_str());
+    }
+    catch (Tango::DevFailed& df)
+    {
+
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          std::string(df.errors[0].desc).c_str(),
+                                          "Layout::write_operationValue");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Layout::write_operationValue
 }
 //--------------------------------------------------------
 /**
@@ -371,10 +632,30 @@ void Layout::read_operationsList(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Layout::read_operationsList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Layout::read_operationsList) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationsList_read, 1024);
+
+    DEBUG_STREAM << "Layout::read_operationsList(Tango::Attribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    Tango::DevString *ptr = new Tango::DevString[ 1024 ];
+
+    int item_idx = 0;
+	ptr[item_idx] = CORBA::string_dup("");
+    for (std::map<long, operationParams >::iterator itMap = m_mapOperations.begin(); itMap != m_mapOperations.end(); ++itMap)
+    {
+		if(itMap->second.operationType != "NONE")
+		{
+			std::stringstream item("");
+			item << "runLevel = " << itMap->first
+			<< " : "
+			<< "Operation = " << itMap->second.operationType
+			<< " ( "<< itMap->second.operationValue<<" )";
+			ptr[item_idx] = CORBA::string_dup((item.str()).c_str());
+			item_idx++;
+		}
+    }
 	
-	/*----- PROTECTED REGION END -----*/	//	Layout::read_operationsList
+    attr.set_value(ptr, item_idx, 0, true);
+
+/*----- PROTECTED REGION END -----*/	//	Layout::read_operationsList
 }
 
 //--------------------------------------------------------
@@ -407,10 +688,26 @@ void Layout::add_operation(Tango::DevLong argin)
 {
 	DEBUG_STREAM << "Layout::AddOperation()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(Layout::add_operation) ENABLED START -----*/
-	
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::add_operation
+
+    INFO_STREAM << "Layout::add_operation(): entering... !" << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    //	Add your own code to control device here
+    try
+    {
+        add_external_operation(argin);
+        memorize_all_operations();
+    }
+    catch (Exception& e)
+    {
+
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "Layout::add_operation");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Layout::add_operation
 }
 //--------------------------------------------------------
 /**
@@ -424,15 +721,253 @@ void Layout::remove_operation(Tango::DevLong argin)
 {
 	DEBUG_STREAM << "Layout::RemoveOperation()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(Layout::remove_operation) ENABLED START -----*/
-	
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	Layout::remove_operation
+
+    INFO_STREAM << "Layout::remove_operation(): entering... !" << endl;
+
+    //	Add your own code to control device here
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+		std::map<long, operationParams >::iterator it;
+		it = m_mapOperations.find (argin);
+		if (it != m_mapOperations.end())
+		{
+			delete_external_operation(argin);
+			memorize_all_operations();
+		}
+    }
+    catch (Exception& e)
+    {
+
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "Layout::remove_operation");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Layout::remove_operation
 }
 
 /*----- PROTECTED REGION ID(Layout::namespace_ending) ENABLED START -----*/
+void Layout::delete_external_operation(long level)
+{
+    DEBUG_STREAM << "Layout::delete_external_operation() entering ... " << endl;
+    //free old operation
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    if (m_ct != 0)
+    {
+        try
+        {
+			std::stringstream opId("");
+			opId << m_mapOperations[level].opId;
+			INFO_STREAM << "\t- delOp [" << opId.str() << "]"<<endl;
+			m_ct->externalOperation()->delOp(opId.str());
+			m_mapOperations.erase(level);
+        }
+        catch (Exception& e)
+        {
 
-//	Additional Methods
+            ERROR_STREAM << e.getErrMsg() << endl;
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           e.getErrMsg().c_str(),
+                                           "Layout::delete_external_operation");
+        }
+    }
+}
+
+void Layout::add_external_operation(long level)
+{
+    DEBUG_STREAM << "Layout::add_external_operation() entering ... " << endl;
+    //add a new operation
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	transform(m_operationType.begin(), m_operationType.end(), m_operationType.begin(), ::toupper);
+    if (m_ct != 0)
+    {
+        try
+        {
+            bool flipX = false;
+            bool flipY = false;
+            if (m_operationType == "FLIP")
+            {
+                if (m_operationValue == "X")
+                {
+                    flipX = true;
+                }
+                else if (m_operationValue == "Y")
+                {
+                    flipY = true;
+                }
+                else if (m_operationValue == "XY")
+                {
+                    flipX = true;
+                    flipY = true;
+                }
+                else
+                {
+                    Tango::Except::throw_exception("CONFIGURATION_ERROR",
+                                                   "Available Flip Modes are:"
+                                                   "\n- X"
+                                                   "\n- Y"
+                                                   "\n- XY",
+                                                   "Layout::add_external_operation");
+                }
+
+                //create new operation
+                std::stringstream opId("");
+                SoftOpInstance op;
+                opId << level<<":FLIP ("<<m_operationValue<<")";
+				INFO_STREAM << "\t- addOp [" << opId.str() << "]"<<endl;
+				operationParams params = {opId.str(), attr_operationType_write, attr_operationValue_write};
+				m_mapOperations[level] = params;
+                m_ct->externalOperation()->addOp(FLIP, opId.str(), level, op);
+                (reinterpret_cast<SoftOpFlip*> (op.m_opt))->setFlip(flipX, flipY);
+                return;
+            }
+
+            if (m_operationType == "ROTATION")
+            {
+				SoftOpRotation::Type type;
+                if (m_operationValue == "90")
+                {
+                    type = SoftOpRotation::R_90;
+                }
+                else if (m_operationValue == "180")
+                {
+                    type = SoftOpRotation::R_180;
+                }
+                else if (m_operationValue == "270")
+                {
+					type = SoftOpRotation::R_270;
+                }
+                else
+                {
+                    Tango::Except::throw_exception("CONFIGURATION_ERROR",
+                                                   "Available Rotation Modes are:"
+                                                   "\n- 90"
+                                                   "\n- 180"
+                                                   "\n- 270",
+                                                   "Layout::add_external_operation");
+                }
+				//create new operation
+                std::stringstream opId("");
+                SoftOpInstance op;
+                opId << level<<":ROTATION ("<<m_operationValue<<")";
+				INFO_STREAM << "\t- addOp [" << opId.str() << "]"<<endl;
+				operationParams params = {opId.str(), attr_operationType_write, attr_operationValue_write};
+				m_mapOperations[level] = params;
+                m_ct->externalOperation()->addOp(ROTATION, opId.str(), level, op);
+                (reinterpret_cast<SoftOpRotation*> (op.m_opt))->setType(type);
+                return;
+            }
+
+            if (m_operationType == "+"	||
+                m_operationType == "-"	||
+                m_operationType == "*"	||
+                m_operationType == "/"	||
+                m_operationType == "<<"	||
+                m_operationType == ">>" ||
+				m_operationType == "CIRPAD_2X10" ||
+				m_operationType == "CIRPAD_4X5"
+				)
+            {
+                //create new operation
+                std::stringstream opId("");
+                SoftOpInstance op;
+				opId << level<<":"<<m_operationType<<" ("<<m_operationValue<<")";
+				INFO_STREAM << "\t- addOp [" << opId.str() << "]"<<endl;
+				operationParams params = {opId.str(), attr_operationType_write, attr_operationValue_write};
+				m_mapOperations[level] = params;
+                m_ct->externalOperation()->addOp(USER_LINK_TASK, opId.str(), level, op);
+
+				//prepare l'externalOperation Task
+				LayoutTask* task = new LayoutTask("NONE", 0, this);
+                task->setOperationType(attr_operationType_write);
+                task->setOperationValue(yat::XString<double>::to_num(m_operationValue));
+				m_layout_tasks.push_back(task);
+                (reinterpret_cast<SoftUserLinkTask*> (op.m_opt))->setLinkTask(task);
+                return;
+            }
+
+            //NOP : if(m_operationType == "NONE")
+        }
+        catch (Exception& e)
+        {
+            ERROR_STREAM << e.getErrMsg() << endl;
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           e.getErrMsg().c_str(),
+                                           "Layout::add_external_operation");
+        }
+        catch (yat::Exception& ex)
+        {
+            //throw_devfailed( ex );
+            ex.dump();
+            std::stringstream errMsg("");
+            for (unsigned i = 0; i < ex.errors.size(); i++)
+            {
+                errMsg << ex.errors[i].desc << endl;
+            }
+
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           errMsg.str().c_str(),
+                                           "Layout::add_external_operation");
+        }
+    }
+}
+
+void Layout::memorize_all_operations(void)
+{
+    DEBUG_STREAM << "Layout::memorize_all_operations() entering ... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    //Memorize operations
+
+    std::vector<long> vecOpLevel;
+    std::vector<std::string> vecOpType;
+    std::vector<std::string> vecOpValue;
+    for (std::map<long, operationParams >::iterator itMap = m_mapOperations.begin(); itMap != m_mapOperations.end(); ++itMap)
+    {
+
+        vecOpLevel.push_back(itMap->first);
+        vecOpType.push_back(itMap->second.operationType);
+        vecOpValue.push_back(itMap->second.operationValue);
+    }
+
+    yat4tango::PropertyHelper::set_property(this, "MemorizedOperationLevels", vecOpLevel);
+    yat4tango::PropertyHelper::set_property(this, "MemorizedOperationTypes", vecOpType);
+    yat4tango::PropertyHelper::set_property(this, "MemorizedOperationValues", vecOpValue);
+}
+
+Tango::DevState Layout::dev_state()
+{
+    Tango::DevState argout = DeviceImpl::dev_state();
+    DEBUG_STREAM << "Layout::dev_state(): entering... !" << endl;
+    //    Add your own code to control device here
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    stringstream DeviceStatus;
+    DeviceStatus << "";
+    Tango::DevState DeviceState = Tango::STANDBY;
+    if (!m_is_device_initialized)
+    {
+        INFO_STREAM << "m_status_message = " << m_status_message.str() << endl;
+        DeviceState = Tango::FAULT;
+        DeviceStatus << m_status_message.str();
+    }
+    else
+    {
+        // state & status are retrieved from Factory, Factory is updated by Generic device
+        DeviceState = ControlFactory::instance().get_state();
+        DeviceStatus << ControlFactory::instance().get_status();
+    }
+
+    set_state(DeviceState);
+    set_status(DeviceStatus.str());
+
+    argout = DeviceState;
+    return argout;
+}
 
 /*----- PROTECTED REGION END -----*/	//	Layout::namespace_ending
 } //	namespace

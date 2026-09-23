@@ -64,8 +64,9 @@ bool FitGaussian::is_version_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for version attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::versionStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::versionStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::versionStateAllowed_READ
 	return true;
 }
 
@@ -80,8 +81,9 @@ bool FitGaussian::is_operationType_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for operationType attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::operationTypeStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::operationTypeStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::operationTypeStateAllowed_READ
 	return true;
 }
 
@@ -95,8 +97,12 @@ bool FitGaussian::is_FitEnabled_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for FitEnabled attribute in Write access.
 	/*----- PROTECTED REGION ID(FitGaussian::FitEnabledStateAllowed_WRITE) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::FitEnabledStateAllowed_WRITE
+
+		//	End of Generated Code
+
+		//	Re-Start of Generated Code
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::FitEnabledStateAllowed_WRITE
 
 	return true;
 }
@@ -111,8 +117,12 @@ bool FitGaussian::is_AutoROIEnabled_allowed(TANGO_UNUSED(Tango::AttReqType type)
 {
 	//	Not any excluded states for AutoROIEnabled attribute in Write access.
 	/*----- PROTECTED REGION ID(FitGaussian::AutoROIEnabledStateAllowed_WRITE) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIEnabledStateAllowed_WRITE
+
+		//	End of Generated Code
+
+		//	Re-Start of Generated Code
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIEnabledStateAllowed_WRITE
 
 	return true;
 }
@@ -128,8 +138,9 @@ bool FitGaussian::is_AutoROIFound_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for AutoROIFound attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::AutoROIFoundStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIFoundStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIFoundStateAllowed_READ
 	return true;
 }
 
@@ -144,8 +155,9 @@ bool FitGaussian::is_AutoROIOriginX_allowed(TANGO_UNUSED(Tango::AttReqType type)
 
 	//	Not any excluded states for AutoROIOriginX attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::AutoROIOriginXStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIOriginXStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIOriginXStateAllowed_READ
 	return true;
 }
 
@@ -160,8 +172,9 @@ bool FitGaussian::is_AutoROIOriginY_allowed(TANGO_UNUSED(Tango::AttReqType type)
 
 	//	Not any excluded states for AutoROIOriginY attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::AutoROIOriginYStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIOriginYStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIOriginYStateAllowed_READ
 	return true;
 }
 
@@ -176,8 +189,9 @@ bool FitGaussian::is_AutoROIWidth_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for AutoROIWidth attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::AutoROIWidthStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIWidthStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIWidthStateAllowed_READ
 	return true;
 }
 
@@ -192,8 +206,9 @@ bool FitGaussian::is_AutoROIHeight_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for AutoROIHeight attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::AutoROIHeightStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIHeightStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::AutoROIHeightStateAllowed_READ
 	return true;
 }
 
@@ -207,8 +222,12 @@ bool FitGaussian::is_XProjEnabled_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for XProjEnabled attribute in Write access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjEnabledStateAllowed_WRITE) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjEnabledStateAllowed_WRITE
+
+		//	End of Generated Code
+
+		//	Re-Start of Generated Code
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjEnabledStateAllowed_WRITE
 
 	return true;
 }
@@ -224,8 +243,9 @@ bool FitGaussian::is_XProjFitConverged_allowed(TANGO_UNUSED(Tango::AttReqType ty
 
 	//	Not any excluded states for XProjFitConverged attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFitConvergedStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitConvergedStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitConvergedStateAllowed_READ
 	return true;
 }
 
@@ -240,8 +260,9 @@ bool FitGaussian::is_XProjFitCenter_allowed(TANGO_UNUSED(Tango::AttReqType type)
 
 	//	Not any excluded states for XProjFitCenter attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFitCenterStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitCenterStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitCenterStateAllowed_READ
 	return true;
 }
 
@@ -256,8 +277,9 @@ bool FitGaussian::is_XProjFitMag_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for XProjFitMag attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFitMagStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitMagStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitMagStateAllowed_READ
 	return true;
 }
 
@@ -272,8 +294,9 @@ bool FitGaussian::is_XProjFitSigma_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for XProjFitSigma attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFitSigmaStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitSigmaStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitSigmaStateAllowed_READ
 	return true;
 }
 
@@ -288,8 +311,9 @@ bool FitGaussian::is_XProjFitFWHM_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for XProjFitFWHM attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFitFWHMStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitFWHMStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitFWHMStateAllowed_READ
 	return true;
 }
 
@@ -304,8 +328,9 @@ bool FitGaussian::is_XProjFitBG_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for XProjFitBG attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFitBGStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitBGStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitBGStateAllowed_READ
 	return true;
 }
 
@@ -320,8 +345,9 @@ bool FitGaussian::is_XProjFitChi2_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for XProjFitChi2 attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFitChi2StateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitChi2StateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitChi2StateAllowed_READ
 	return true;
 }
 
@@ -336,8 +362,9 @@ bool FitGaussian::is_XProjFitNbIter_allowed(TANGO_UNUSED(Tango::AttReqType type)
 
 	//	Not any excluded states for XProjFitNbIter attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFitNbIterStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitNbIterStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFitNbIterStateAllowed_READ
 	return true;
 }
 
@@ -352,8 +379,9 @@ bool FitGaussian::is_XProjPushTime_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for XProjPushTime attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjPushTimeStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjPushTimeStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjPushTimeStateAllowed_READ
 	return true;
 }
 
@@ -367,8 +395,12 @@ bool FitGaussian::is_YProjEnabled_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for YProjEnabled attribute in Write access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjEnabledStateAllowed_WRITE) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjEnabledStateAllowed_WRITE
+
+		//	End of Generated Code
+
+		//	Re-Start of Generated Code
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjEnabledStateAllowed_WRITE
 
 	return true;
 }
@@ -384,8 +416,9 @@ bool FitGaussian::is_YProjFitConverged_allowed(TANGO_UNUSED(Tango::AttReqType ty
 
 	//	Not any excluded states for YProjFitConverged attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFitConvergedStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitConvergedStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitConvergedStateAllowed_READ
 	return true;
 }
 
@@ -400,8 +433,9 @@ bool FitGaussian::is_YProjFitCenter_allowed(TANGO_UNUSED(Tango::AttReqType type)
 
 	//	Not any excluded states for YProjFitCenter attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFitCenterStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitCenterStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitCenterStateAllowed_READ
 	return true;
 }
 
@@ -416,8 +450,9 @@ bool FitGaussian::is_YProjFitMag_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for YProjFitMag attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFitMagStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitMagStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitMagStateAllowed_READ
 	return true;
 }
 
@@ -432,8 +467,9 @@ bool FitGaussian::is_YProjFitSigma_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for YProjFitSigma attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFitSigmaStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitSigmaStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitSigmaStateAllowed_READ
 	return true;
 }
 
@@ -448,8 +484,9 @@ bool FitGaussian::is_YProjFitFWHM_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for YProjFitFWHM attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFitFWHMStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitFWHMStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitFWHMStateAllowed_READ
 	return true;
 }
 
@@ -464,8 +501,9 @@ bool FitGaussian::is_YProjFitBG_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for YProjFitBG attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFitBGStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitBGStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitBGStateAllowed_READ
 	return true;
 }
 
@@ -480,8 +518,9 @@ bool FitGaussian::is_YProjFitChi2_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for YProjFitChi2 attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFitChi2StateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitChi2StateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitChi2StateAllowed_READ
 	return true;
 }
 
@@ -496,8 +535,9 @@ bool FitGaussian::is_YProjFitNbIter_allowed(TANGO_UNUSED(Tango::AttReqType type)
 
 	//	Not any excluded states for YProjFitNbIter attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFitNbIterStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitNbIterStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFitNbIterStateAllowed_READ
 	return true;
 }
 
@@ -512,8 +552,9 @@ bool FitGaussian::is_YProjPushTime_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for YProjPushTime attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjPushTimeStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjPushTimeStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjPushTimeStateAllowed_READ
 	return true;
 }
 
@@ -528,8 +569,9 @@ bool FitGaussian::is_operationList_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for operationList attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::operationListStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::operationListStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::operationListStateAllowed_READ
 	return true;
 }
 
@@ -544,8 +586,9 @@ bool FitGaussian::is_XProj_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for XProj attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjStateAllowed_READ
 	return true;
 }
 
@@ -560,8 +603,9 @@ bool FitGaussian::is_XProjFitted_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for XProjFitted attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::XProjFittedStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFittedStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::XProjFittedStateAllowed_READ
 	return true;
 }
 
@@ -576,8 +620,9 @@ bool FitGaussian::is_YProj_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for YProj attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjStateAllowed_READ
 	return true;
 }
 
@@ -592,8 +637,9 @@ bool FitGaussian::is_YProjFitted_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for YProjFitted attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::YProjFittedStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFittedStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::YProjFittedStateAllowed_READ
 	return true;
 }
 
@@ -608,8 +654,9 @@ bool FitGaussian::is_ROIImage_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for ROIImage attribute in read access.
 	/*----- PROTECTED REGION ID(FitGaussian::ROIImageStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::ROIImageStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::ROIImageStateAllowed_READ
 	return true;
 }
 

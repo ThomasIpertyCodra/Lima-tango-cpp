@@ -65,8 +65,9 @@ bool Mask::is_version_allowed(TANGO_UNUSED(Tango::AttReqType type))
 
 	//	Not any excluded states for version attribute in read access.
 	/*----- PROTECTED REGION ID(Mask::versionStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	Mask::versionStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	Mask::versionStateAllowed_READ
 	return true;
 }
 
@@ -80,8 +81,26 @@ bool Mask::is_runLevel_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for runLevel attribute in Write access.
 	/*----- PROTECTED REGION ID(Mask::runLevelStateAllowed_WRITE) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	Mask::runLevelStateAllowed_WRITE
+
+	if (get_state() == Tango::INIT	||
+		get_state() == Tango::FAULT	||
+		get_state() == Tango::RUNNING)
+	{
+		//	End of Generated Code
+		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
+		{
+           return true;
+		}
+
+		if ( get_state()==Tango::FAULT && is_device_initialized() )
+		{
+           return true;
+		}
+		//	Re-Start of Generated Code
+		return false;
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Mask::runLevelStateAllowed_WRITE
 
 	return true;
 }
@@ -104,8 +123,17 @@ bool Mask::is_operationsList_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Mask::operationsListStateAllowed_READ) ENABLED START -----*/
+if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
+		{
+           return true;
+		}
 		
-		/*----- PROTECTED REGION END -----*/	//	Mask::operationsListStateAllowed_READ
+		if ( get_state()==Tango::FAULT && is_device_initialized() )
+		{
+           return true;
+		}
+
+/*----- PROTECTED REGION END -----*/	//	Mask::operationsListStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -123,8 +151,17 @@ bool Mask::is_maskImage_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for maskImage attribute in Write access.
 	/*----- PROTECTED REGION ID(Mask::maskImageStateAllowed_WRITE) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	Mask::maskImageStateAllowed_WRITE
+
+	if (get_state() == Tango::INIT	||
+		get_state() == Tango::RUNNING)
+	{
+		//	End of Generated Code
+
+		//	Re-Start of Generated Code
+		return false;
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Mask::maskImageStateAllowed_WRITE
 
 	//	Check access type.
 	if ( type==Tango::READ_REQ )
@@ -134,8 +171,9 @@ bool Mask::is_maskImage_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Mask::maskImageStateAllowed_READ) ENABLED START -----*/
-		
-		/*----- PROTECTED REGION END -----*/	//	Mask::maskImageStateAllowed_READ
+
+
+/*----- PROTECTED REGION END -----*/	//	Mask::maskImageStateAllowed_READ
 			return false;
 		}
 		return true;

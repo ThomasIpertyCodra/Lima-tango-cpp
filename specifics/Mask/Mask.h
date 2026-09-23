@@ -1,4 +1,5 @@
 /*----- PROTECTED REGION ID(Mask.h) ENABLED START -----*/
+
 //=============================================================================
 //
 // file :        Mask.h
@@ -38,8 +39,28 @@
 #ifndef Mask_H
 #define Mask_H
 
+#include "Factory.h"
 #include <tango.h>
+#include <yat4tango/DynamicInterfaceManager.h>
+#include <yat4tango/PropertyHelper.h>
+#include <yat4tango/InnerAppender.h>
+#include <yat/threading/Mutex.h>
+#include <yat/utils/XString.h>
 
+#include "lima/HwInterface.h"
+#include "lima/CtControl.h"
+#include "lima/CtAcquisition.h"
+#include "lima/CtImage.h"
+#include "lima/CtVideo.h"
+#include "lima/SoftOpId.h"
+#include "lima/SoftOpExternalMgr.h"
+#include "processlib/Data.h"
+#include "processlib/TaskMgr.h"
+#include <map>
+
+
+#define MAX_ATTRIBUTE_STRING_LENGTH     256
+#define MASK_CURRENT_VERSION                 "1.0.0"
 
 /*----- PROTECTED REGION END -----*/	//	Mask.h
 
@@ -52,7 +73,19 @@ namespace Mask_ns
 {
 /*----- PROTECTED REGION ID(Mask::Additional Class Declarations) ENABLED START -----*/
 
-//	Additional Class Declarations
+
+/**
+ * Class Description:
+ *
+ */
+
+/*
+ *	Device States Description:
+*  Tango::INIT :
+*  Tango::STANDBY :
+*  Tango::FAULT :
+*  Tango::RUNNING :
+ */
 
 /*----- PROTECTED REGION END -----*/	//	Mask::Additional Class Declarations
 
@@ -197,15 +230,45 @@ public:
 
 
 /*----- PROTECTED REGION ID(Mask::Additional Method prototypes) ENABLED START -----*/
+public:
+Tango::DevULong	attr_runLevel_write;
+Tango::DevShort	attr_maskImage_write;
+void read_runLevel(Tango::Attribute &attr);
+    bool is_device_initialized()
+    {
+        return m_is_device_initialized;
+    };
 
-//	Additional Method prototypes
+    ///methode to create the Data image needed by processlib Mask task
+    template <typename OUTPUT>
+    Data create_data_from_mask( Tango::DevShort* mask_image,    //mask image
+                                long mask_dim_x,                //dim_x of the mask
+                                long mask_dim_y,                //dim_y of the mask
+                                Data::TYPE data_type,      //type of the object Data to create (Data::INT8 Data::UINT8 Data::INT16 ...)
+                                long data_depth);               //number of bytes occupied by the Data::TYPE (1->Data::INT8 2->Data::INT16 ...)
+
+    void set_mask_image(void);
+protected:
+    //	Add your own data members here
+    //-----------------------------------------
+    bool            m_is_device_initialized;
+    stringstream    m_status_message;
+
+    //LIMA objects
+    lima::CtControl*            m_ct;
+    lima::SoftOpInstance        m_soft_operation;
+    long                        m_dim_x;
+    long                        m_dim_y;
+    std::vector<std::string >   m_operations_list;
 
 /*----- PROTECTED REGION END -----*/	//	Mask::Additional Method prototypes
 };
 
 /*----- PROTECTED REGION ID(Mask::Additional Classes Definitions) ENABLED START -----*/
-
-//	Additional Classes Definitions
+}
+#include "Mask.hpp"
+namespace Mask_ns
+{
 
 /*----- PROTECTED REGION END -----*/	//	Mask::Additional Classes Definitions
 

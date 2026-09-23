@@ -40,6 +40,8 @@ static const char *RcsId = "$Id:  $";
 //=============================================================================
 
 
+#include <tango.h>
+#include <PogoHelper.h>
 #include <RoiCounters.h>
 #include <RoiCountersClass.h>
 
@@ -84,7 +86,7 @@ namespace RoiCounters_ns
  */
 //--------------------------------------------------------
 RoiCounters::RoiCounters(Tango::DeviceClass *cl, string &s)
- : Tango::Device_4Impl(cl, s.c_str())
+ : Tango::Device_4Impl(cl, s.c_str()), m_dim(this)
 {
 	/*----- PROTECTED REGION ID(RoiCounters::constructor_1) ENABLED START -----*/
 	init_device();
@@ -93,7 +95,7 @@ RoiCounters::RoiCounters(Tango::DeviceClass *cl, string &s)
 }
 //--------------------------------------------------------
 RoiCounters::RoiCounters(Tango::DeviceClass *cl, const char *s)
- : Tango::Device_4Impl(cl, s)
+ : Tango::Device_4Impl(cl, s), m_dim(this)
 {
 	/*----- PROTECTED REGION ID(RoiCounters::constructor_2) ENABLED START -----*/
 	init_device();
@@ -102,7 +104,7 @@ RoiCounters::RoiCounters(Tango::DeviceClass *cl, const char *s)
 }
 //--------------------------------------------------------
 RoiCounters::RoiCounters(Tango::DeviceClass *cl, const char *s, const char *d)
- : Tango::Device_4Impl(cl, s, d)
+ : Tango::Device_4Impl(cl, s, d), m_dim(this)
 {
 	/*----- PROTECTED REGION ID(RoiCounters::constructor_3) ENABLED START -----*/
 	init_device();
@@ -120,10 +122,20 @@ void RoiCounters::delete_device()
 {
 	DEBUG_STREAM << "RoiCounters::delete_device() " << device_name << endl;
 	/*----- PROTECTED REGION ID(RoiCounters::delete_device) ENABLED START -----*/
-	
+
+	INFO_STREAM << "RoiCounters::delete_device() delete device " << device_name << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
 	//	Delete device allocated objects
+	DELETE_DEVSTRING_ATTRIBUTE(attr_version_read);
+
+	//- remove any dynamic attr or command
+	INFO_STREAM << "remove any dynamic attributes or commands" << endl;
+	m_dim.remove();
 	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::delete_device
+	INFO_STREAM << "Remove the inner-appender." << endl;
+	yat4tango::InnerAppender::release(this);
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::delete_device
 }
 
 //--------------------------------------------------------
@@ -136,10 +148,13 @@ void RoiCounters::init_device()
 {
 	DEBUG_STREAM << "RoiCounters::init_device() create device " << device_name << endl;
 	/*----- PROTECTED REGION ID(RoiCounters::init_device_before) ENABLED START -----*/
-	
-	//	Initialization before get_device_property() call
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::init_device_before
+
+	INFO_STREAM << "RoiCounters::init_device() create device " << device_name << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	// Initialise variables to default values
+	//--------------------------------------------
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::init_device_before
 	
 
 	//	Get the device properties from database
@@ -147,10 +162,259 @@ void RoiCounters::init_device()
 	
 
 	/*----- PROTECTED REGION ID(RoiCounters::init_device) ENABLED START -----*/
+
+
+	CREATE_DEVSTRING_ATTRIBUTE(attr_version_read, 256);
+	//By default INIT, need to ensure that all objets are OK before set the device to STANDBY
+	set_state(Tango::INIT);
+	m_is_device_initialized = false;
+	m_status_message.str("");
+	m_operations_list.clear();
+
+	//- instanciate the appender in order to manage logs
+	INFO_STREAM << "Create the inner-appender in order to manage logs." << endl;
+	yat4tango::InnerAppender::initialize(this, 512);
 	
-	//	Initialize device
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::init_device
+	//initialize user data members attached to tango attributes
+	attr_frameNumber_value = 0;
+	attr_x_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_y_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_width_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_height_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_coordinates_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_sum_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_average_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_std_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_minValue_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_minX_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_minY_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_maxValue_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_maxX_arrays.resize(MAX_NB_ROICOUNTERS);
+	attr_maxY_arrays.resize(MAX_NB_ROICOUNTERS);
+	////attr_sum_arrays_circular.capacity(MAX_NB_ROICOUNTERS);
+	//clear vectors
+	attr_x_arrays.clear();
+	attr_y_arrays.clear();
+	attr_width_arrays.clear();
+	attr_height_arrays.clear();
+	attr_coordinates_arrays.clear();
+	attr_sum_arrays.clear();
+	attr_average_arrays.clear();
+	attr_std_arrays.clear();
+	attr_minValue_arrays.clear();
+	attr_minX_arrays.clear();
+	attr_minY_arrays.clear();
+	attr_maxValue_arrays.clear();
+	attr_maxX_arrays.clear();
+	attr_maxY_arrays.clear();
+	////attr_sum_arrays_circular.clear();
+
+	attr_runLevel_write = memorizedRunLevel;
+	try
+	{
+		yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+		//- get the main object used to pilot the lima framework
+		//in fact LimaDetector is create the singleton control objet
+		m_ct = ControlFactory::instance().get_control("RoiCounters");
+
+	//delete the operation	"RoiCounters"
+    //remove external operations
+	INFO_STREAM << "- remove all external operations ..."<<endl;
+	std::stringstream opId("");
+	opId << ":RoiCounters";
+	INFO_STREAM << "\t- delOp [" << opId.str() << "]"<<endl;
+	m_ct->externalOperation()->delOp(opId.str());
+	}
+	catch(Exception& e)
+	{
+		INFO_STREAM << "Initialization Failed : " << e.getErrMsg() << endl;
+		m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+		m_is_device_initialized = false;
+		set_state(Tango::FAULT);
+		return;
+	}
+	catch(...)
+	{
+		INFO_STREAM << "Initialization Failed : UNKNOWN" << endl;
+		m_status_message << "Initialization Failed : UNKNOWN" << endl;
+		set_state(Tango::FAULT);
+		m_is_device_initialized = false;
+		return;
+	}
+
+	//---------------------------------------------------------
+	//Configure/create all scalar dynamic attributes
+	//---------------------------------------------------------
+	if(!create_scalar_dynamic_attributes())
+	{
+		m_is_device_initialized = false;
+		return;
+	}
+
+	//---------------------------------------------------------
+	//Configure/create all image dynamic attributes
+	//---------------------------------------------------------
+	if(!create_image_dynamic_attributes())
+	{
+		m_is_device_initialized = false;
+		return;
+	}
+
+	try
+	{
+		Tango::WAttribute &runlevel = dev_attr->get_w_attr_by_name("runLevel");
+	attr_runLevel_write = memorizedRunLevel;
+	runlevel.set_write_value(attr_runLevel_write);
+	write_runLevel(runlevel);
+
+		//Write tango hardware at Init
+		std::stringstream ss_name;
+		std::string strName;
+
+
+		// If nbRoiCounters is too high compared to the number of (x, y, width, height) properties,
+		// throw exception
+		if(__x.size() < nbRoiCounters)
+		{
+			Tango::Except::throw_exception(	"INVALID_PROPERTY_SIZE",
+										"Array property __x is smaller than the nb of RoiCounters asked",
+										"RoiCounter::initDevice");
+		}
+		if(__y.size() < nbRoiCounters)
+		{
+			Tango::Except::throw_exception(	"INVALID_PROPERTY_SIZE",
+										"Array property __y is smaller than the nb of RoiCounters asked",
+										"RoiCounter::initDevice");
+
+		}
+		if(__width.size() < nbRoiCounters)
+		{
+			Tango::Except::throw_exception(	"INVALID_PROPERTY_SIZE",
+										"Array property __width is smaller than the nb of RoiCounters asked",
+										"RoiCounter::initDevice");
+
+		}
+		if(__height.size() < nbRoiCounters)
+		{
+			Tango::Except::throw_exception(	"INVALID_PROPERTY_SIZE",
+										"Array property __height is smaller than the nb of RoiCounters asked",
+										"RoiCounter::initDevice");
+
+		}
+
+
+		for(size_t i = 0;i < nbRoiCounters;i++)
+		{
+			//get memorized from properties
+			INFO_STREAM << "Get memorized Roi's from properties" << endl;
+			attr_x_arrays[i] = (Tango::DevULong)(__x.at(i));
+			attr_y_arrays[i] = (Tango::DevULong)(__y.at(i));
+			attr_width_arrays[i] = (Tango::DevULong)(__width.at(i));
+			attr_height_arrays[i] = (Tango::DevULong)(__height.at(i));
+
+			// Initialize coordinate strings to init values of attributes
+			std::stringstream ss;
+			ss  << attr_x_arrays[i]
+				<< ", " << attr_y_arrays[i]
+				<< ", " << attr_width_arrays[i]
+				<< ", " << attr_height_arrays[i];
+			attr_coordinates_arrays[i] = Tango::string_dup(ss.str().c_str());
+
+			ss_name.str("");
+			ss_name << "x" << i;
+			strName = ss_name.str();
+			INFO_STREAM << "Write tango hardware at Init - " << strName << endl;
+			Tango::WAttribute &x = dev_attr->get_w_attr_by_name(strName.c_str());
+			x.set_write_value(attr_x_arrays[i]);
+			yat4tango::DynamicAttributeWriteCallbackData cbd_x;
+			cbd_x.tga = &x;
+			write_rois_callback(cbd_x);
+
+			ss_name.str("");
+			ss_name << "y" << i;
+			strName = ss_name.str();
+			INFO_STREAM << "Write tango hardware at Init - " << strName << endl;
+			Tango::WAttribute &y = dev_attr->get_w_attr_by_name(strName.c_str());
+			y.set_write_value(attr_y_arrays[i]);
+			yat4tango::DynamicAttributeWriteCallbackData cbd_y;
+			cbd_y.tga = &y;
+			write_rois_callback(cbd_y);
+
+			ss_name.str("");
+			ss_name << "width" << i;
+			strName = ss_name.str();
+			INFO_STREAM << "Write tango hardware at Init - " << strName << endl;
+			Tango::WAttribute &width = dev_attr->get_w_attr_by_name(strName.c_str());
+			width.set_write_value(attr_width_arrays[i]);
+			yat4tango::DynamicAttributeWriteCallbackData cbd_width;
+			cbd_width.tga = &width;
+			write_rois_callback(cbd_width);
+
+			ss_name.str("");
+			ss_name << "height" << i;
+			strName = ss_name.str();
+			INFO_STREAM << "Write tango hardware at Init - " << strName << endl;
+			Tango::WAttribute &height = dev_attr->get_w_attr_by_name(strName.c_str());
+			height.set_write_value(attr_height_arrays[i]);
+			yat4tango::DynamicAttributeWriteCallbackData cbd_height;
+			cbd_height.tga = &height;
+			write_rois_callback(cbd_height);
+
+			ss_name.str("");
+			ss_name << "coordinates" << i;
+			strName = ss_name.str();
+			INFO_STREAM << "Write tango hardware at Init - " << strName << endl;
+			Tango::WAttribute &coordinates = dev_attr->get_w_attr_by_name(strName.c_str());
+			coordinates.set_write_value(attr_coordinates_arrays[i]);
+			yat4tango::DynamicAttributeWriteCallbackData cbd_coordinates;
+			cbd_coordinates.tga = &coordinates;
+			write_rois_callback(cbd_coordinates);
+		}
+	}
+	catch(ProcessException& p)
+	{
+		ERROR_STREAM << "Initialization Failed : " << p.getErrMsg() << endl;
+		m_status_message << "Initialization Failed : " << p.getErrMsg() << endl;
+		m_is_device_initialized = false;
+		set_state(Tango::FAULT);
+		return;
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << "Initialization Failed : " << e.getErrMsg() << endl;
+		m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+		m_is_device_initialized = false;
+		set_state(Tango::FAULT);
+		return;
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		m_status_message << "Initialization Failed : ";
+		for(unsigned i = 0;i < df.errors.length();i++)
+		{
+			m_status_message << df.errors[i].desc << endl;
+		}
+		m_is_device_initialized = false;
+		set_state(Tango::FAULT);
+		return;
+	}
+	catch(...)
+	{
+		ERROR_STREAM << "Initialization Failed : UNKNOWN" << endl;
+		m_status_message << "Initialization Failed : UNKNOWN" << endl;
+		set_state(Tango::FAULT);
+		m_is_device_initialized = false;
+		return;
+	}
+
+	//everything is Ok
+	m_is_device_initialized = true;
+
+	set_state(Tango::STANDBY);
+	dev_state();
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::init_device
 }
 
 //--------------------------------------------------------
@@ -162,10 +426,11 @@ void RoiCounters::init_device()
 void RoiCounters::get_device_property()
 {
 	/*----- PROTECTED REGION ID(RoiCounters::get_device_property_before) ENABLED START -----*/
-	
-	//	Initialize property data members
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::get_device_property_before
+
+	//	Initialize your default values here (if not done with  POGO).
+	//------------------------------------------------------------------
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::get_device_property_before
 
 
 	//	Read device properties from database.
@@ -271,10 +536,18 @@ void RoiCounters::get_device_property()
 	}
 
 	/*----- PROTECTED REGION ID(RoiCounters::get_device_property_after) ENABLED START -----*/
-	
-	//	Check device property data members init
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::get_device_property_after
+
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "2", "NbRoiCounters");
+	vector<string> vecXY(2, "0");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, vecXY, "__x");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, vecXY, "__y");
+	vector<string> vecWidthHeight(2, "10");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, vecWidthHeight, "__width");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, vecWidthHeight, "__height");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "256", "ExpertSpectrumMaxDataSize");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "0", "MemorizedRunLevel");
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::get_device_property_after
 }
 
 //--------------------------------------------------------
@@ -287,10 +560,38 @@ void RoiCounters::always_executed_hook()
 {
 	INFO_STREAM << "RoiCounters::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(RoiCounters::always_executed_hook) ENABLED START -----*/
-	
-	//	code always executed before all requests
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::always_executed_hook
+
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_is_device_initialized)//nothing to do ! device need init
+			return;
+
+		//- get the singleton control objet used to pilot the lima framework
+		m_ct = ControlFactory::instance().get_control("RoiCounters");
+
+		dev_state();
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+		//- throw exception
+		set_state(Tango::FAULT);
+		m_is_device_initialized = false;
+		return;
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		INFO_STREAM << "Initialization Failed : " << string(df.errors[0].desc) << endl;
+		m_status_message << "Initialization Failed : " << string(df.errors[0].desc) << endl;
+		m_is_device_initialized = false;
+		set_state(Tango::FAULT);
+		return;
+	}
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::always_executed_hook
 }
 
 //--------------------------------------------------------
@@ -303,10 +604,26 @@ void RoiCounters::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
 	DEBUG_STREAM << "RoiCounters::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(RoiCounters::read_attr_hardware) ENABLED START -----*/
-	
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::read_attr_hardware
+
+	DEBUG_STREAM << "RoiCounters::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	//	Add your own code here
+	try
+	{
+		yat::Timer t1;
+		if(is_device_initialized())
+			read_roi();
+		DEBUG_STREAM << "duration  read_roi()  : " << t1.elapsed_msec() << " (ms)" << std::endl;
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		//- throw exception
+		Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+									e.getErrMsg().c_str(),
+									"RoiCounters::read_attr_hardware");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::read_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -322,10 +639,24 @@ void RoiCounters::read_version(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "RoiCounters::read_version(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(RoiCounters::read_version) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_version_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::read_version
+
+	DEBUG_STREAM << "RoiCounters::read_version(Tango::Attribute &attr) entering... " << endl;
+	try
+	{
+		strcpy(*attr_version_read, CURRENT_VERSION);
+		attr.set_value(attr_version_read);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"RoiCounters::read_version()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::read_version
 }
 //--------------------------------------------------------
 /**
@@ -343,9 +674,53 @@ void RoiCounters::write_runLevel(Tango::WAttribute &attr)
 	Tango::DevULong	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(RoiCounters::write_runLevel) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::write_runLevel
+
+	DEBUG_STREAM << "RoiCounters::write_runLevel(Tango::WAttribute &attr) entering... "<< endl;
+	try
+	{
+		attr.get_write_value(attr_runLevel_write);
+				//first delete the operation	"RoiCounters"
+		std::stringstream opId("");
+		opId << ":RoiCounters";
+		INFO_STREAM << "delOp [" << opId.str() << "]" << endl;
+		m_ct->externalOperation()->delOp(opId.str());
+
+		//create new operation
+		INFO_STREAM << "addOp [" << opId.str() << "]" << endl;
+		m_ct->externalOperation()->addOp(ROICOUNTERS, opId.str(), attr_runLevel_write , m_soft_operation);
+		yat4tango::PropertyHelper::set_property(this, "MemorizedRunLevel", attr_runLevel_write);
+
+		//define the size of circular buffer of softop
+		(reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt))->setBufferSize(expertSpectrumMaxDataSize);
+		update_roi();
+	}
+	catch(ProcessException& p)
+	{
+		ERROR_STREAM << p.getErrMsg() << endl;
+		//- throw exception
+		THROW_DEVFAILED("TANGO_DEVICE_ERROR",
+						p.getErrMsg().c_str(),
+						"RoiCounters::write_runLevel()");
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"RoiCounters::write_runLevel");
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		//- throw exception
+		Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+									e.getErrMsg().c_str(),
+									"RoiCounters::write_runLevel");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::write_runLevel
 }
 //--------------------------------------------------------
 /**
@@ -360,10 +735,42 @@ void RoiCounters::read_operationsList(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "RoiCounters::read_operationsList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(RoiCounters::read_operationsList) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationsList_read, 1024);
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::read_operationsList
+
+	DEBUG_STREAM << "RoiCounters::read_operationsList(Tango::Attribute &attr) entering... "<< endl;
+	try
+	{
+		//list all operations
+		Tango::DevString *ptr = new Tango::DevString[ 1024 ];
+
+		int item_idx = 0;
+		ptr[item_idx] = CORBA::string_dup("");
+		for(int i = 0;i < m_operations_list.size();i++)
+		{
+			ptr[item_idx] = CORBA::string_dup(m_operations_list.at(i).c_str());
+			item_idx++;
+		}
+
+		attr.set_value(ptr, item_idx, 0, true);
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		//- throw exception
+		THROW_DEVFAILED("TANGO_DEVICE_ERROR",
+						e.getErrMsg().c_str(),
+						"Mask::read_operationsList");
+	}
+    catch(Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        RETHROW_DEVFAILED(	df,
+							"TANGO_DEVICE_ERROR",
+							std::string(df.errors[0].desc).c_str(),
+							"Mask::read_operationsList");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::read_operationsList
 }
 
 //--------------------------------------------------------
@@ -394,11 +801,32 @@ Tango::DevState RoiCounters::dev_state()
 {
 	DEBUG_STREAM << "RoiCounters::State()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(RoiCounters::dev_state) ENABLED START -----*/
-	
-	Tango::DevState	argout = Tango::UNKNOWN; // replace by your own algorithm
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	RoiCounters::dev_state
+
+	Tango::DevState argout = DeviceImpl::dev_state();
+	DEBUG_STREAM << "RoiCounters::dev_state(): entering... !" << endl;
+	//    Add your own code to control device here
+	stringstream DeviceStatus;
+	DeviceStatus << "";
+	Tango::DevState DeviceState = Tango::STANDBY;
+	if(!m_is_device_initialized)
+	{
+		DeviceState = Tango::FAULT;
+		DeviceStatus << m_status_message.str();
+	}
+	else
+	{
+		// state & status are retrieved from Factory, Factory is updated by Generic device
+		DeviceState = ControlFactory::instance().get_state();
+		DeviceStatus << ControlFactory::instance().get_status();
+	}
+
+	set_state(DeviceState);
+	set_status(DeviceStatus.str());
+
+	argout = DeviceState;
+	return argout;
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::dev_state
 	set_state(argout);    // Give the state to Tango.
 	if (argout!=Tango::ALARM)
 		DeviceImpl::dev_state();
@@ -406,8 +834,1171 @@ Tango::DevState RoiCounters::dev_state()
 }
 
 /*----- PROTECTED REGION ID(RoiCounters::namespace_ending) ENABLED START -----*/
+void RoiCounters::read_runLevel(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "RoiCounters::read_runLevel(Tango::Attribute &attr) entering... "<< endl;
+}
 
-//	Additional Methods
+void RoiCounters::update_roi()
+{
+	INFO_STREAM << "RoiCounters::update_roi() - [BEGIN]" << endl;
+
+	//	Add your own code to control device here
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		std::stringstream ss_rois("");
+		ss_rois<<"runLevel = "<<attr_runLevel_write<<" : Operation = "<<"RoiCounters :"<<endl;
+		std::list<SoftOpRoiCounter::RoiNameAndRoi> listNameAndRois;
+		SoftOpRoiCounter::RoiNameAndRoi roiNameAndRoi;
+		for(int i = 0;i < nbRoiCounters;i++)
+		{
+			Roi roi(attr_x_arrays[i], attr_y_arrays[i], attr_width_arrays[i], attr_height_arrays[i]);
+			std::stringstream ssRoiName;
+			ssRoiName << i;
+			roiNameAndRoi = std::make_pair(ssRoiName.str(), roi);
+			listNameAndRois.push_back(roiNameAndRoi);
+		}
+
+		for(std::list<SoftOpRoiCounter::RoiNameAndRoi>::iterator iter = listNameAndRois.begin();
+			iter != listNameAndRois.end();
+			iter++)
+		{
+			ss_rois<< "- roi " << (*iter).first << " : " << (*iter).second << endl;
+		}
+		INFO_STREAM << ss_rois.str() << endl;
+
+		if((reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt)) != 0)
+		{
+			(reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt))->clearCounterStatus();
+			(reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt))->updateRois(listNameAndRois);
+		}
+
+		//in order to update operationsList attribute
+		m_operations_list.clear();
+		m_operations_list.push_back(ss_rois.str());
+	}
+	catch(ProcessException& p)
+	{
+		ERROR_STREAM << p.getErrMsg() << endl;
+		//- throw exception
+		THROW_DEVFAILED("TANGO_DEVICE_ERROR",
+						p.getErrMsg().c_str(),
+						"RoiCounters::update_roi()");
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		//- throw exception
+		THROW_DEVFAILED("TANGO_DEVICE_ERROR",
+						e.getErrMsg().c_str(),
+						"RoiCounters::update_roi()");
+	}
+
+	INFO_STREAM << "RoiCounters::update_roi() - [END]" << endl;
+}
+
+void RoiCounters::read_roi()
+{
+	DEBUG_STREAM << "RoiCounters::read_roi() - [BEGIN]" << endl;
+
+	//	Add your own code to control device here
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if((reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt)) != 0)
+		{
+			int counter_status = (reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt))->getCounterStatus();
+			DEBUG_STREAM<<"counter_status = "<<counter_status<<std::endl;
+			if(counter_status < 0)
+				return;
+
+
+
+			std::list<SoftOpRoiCounter::RoiNameAndResults> roiNameAndResults;
+			(reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt))->readCounters(0, roiNameAndResults);
+			DEBUG_STREAM<<"roiNameAndResults size = "<<roiNameAndResults.size()<<std::endl;
+			for(std::list<SoftOpRoiCounter::RoiNameAndResults>::iterator iter1 = roiNameAndResults.begin();
+				iter1 != roiNameAndResults.end();
+				iter1++)
+			{
+				std::istringstream roiname((*iter1).first);
+				int roinum;
+				roiname>>roinum;
+				//clear spectrums for each roi
+				{
+					DEBUG_STREAM << "Clear spectrums of the Roi : " <<roinum<< endl;
+					attr_sum_arrays[roinum].spectrum.clear();
+					attr_average_arrays[roinum].spectrum.clear();
+					attr_std_arrays[roinum].spectrum.clear();
+					attr_minValue_arrays[roinum].spectrum.clear();
+					attr_minX_arrays[roinum].spectrum.clear();
+					attr_minY_arrays[roinum].spectrum.clear();
+					attr_maxValue_arrays[roinum].spectrum.clear();
+					attr_maxX_arrays[roinum].spectrum.clear();
+					attr_maxY_arrays[roinum].spectrum.clear();
+
+					////UserAttribute<Tango::DevDouble> attribute_roinum= attr_sum_arrays_circular.ordered_data()[roinum];
+					////attribute_roinum.spectrum.clear();
+				}
+
+				int current_frame = 0;
+				DEBUG_STREAM<<"roiCounterResults size = "<<(*iter1).second.size()<<std::endl;
+				for(std::list<Tasks::RoiCounterResult>::iterator iter2 = ((*iter1).second).begin();
+					iter2 != ((*iter1).second).end();
+					iter2++)
+				{
+
+					DEBUG_STREAM << "++++++++++++++++++++++++++++++++" << endl;
+					DEBUG_STREAM << "+++ roi n??: " << roinum << "\t" << endl;
+					DEBUG_STREAM << "++++++++++++++++++++++++++++++++" << endl;
+
+					//fill values
+					attr_frameNumber_value = (*iter2).frameNumber + 1;
+					current_frame = attr_frameNumber_value;
+					DEBUG_STREAM << "frameNumber = " << attr_frameNumber_value << endl;
+
+					attr_sum_arrays[roinum].scalar = (*iter2).sum;
+					attr_sum_arrays[roinum].spectrum.push_back((*iter2).sum);
+					DEBUG_STREAM << "sum         = " << attr_sum_arrays[roinum].scalar << endl;
+
+					attr_average_arrays[roinum].scalar = (*iter2).average;
+					attr_average_arrays[roinum].spectrum.push_back((*iter2).average);
+					DEBUG_STREAM << "average     = " << attr_average_arrays[roinum].scalar << endl;
+
+					attr_std_arrays[roinum].scalar = (*iter2).std;
+					attr_std_arrays[roinum].spectrum.push_back((*iter2).std);
+					DEBUG_STREAM << "std         = " << attr_std_arrays[roinum].scalar << endl;
+
+					attr_minValue_arrays[roinum].scalar = (*iter2).minValue;
+					attr_minValue_arrays[roinum].spectrum.push_back((*iter2).minValue);
+					DEBUG_STREAM << "minValue    = " << attr_minValue_arrays[roinum].scalar << endl;
+
+					attr_minX_arrays[roinum].scalar = (*iter2).minX;
+					attr_minX_arrays[roinum].spectrum.push_back((*iter2).minX);
+					DEBUG_STREAM << "minX		= " << attr_minX_arrays[roinum].scalar << endl;
+
+					attr_minY_arrays[roinum].scalar = (*iter2).minY;
+					attr_minY_arrays[roinum].spectrum.push_back((*iter2).minY);
+					DEBUG_STREAM << "minY		= " << attr_minY_arrays[roinum].scalar << endl;
+
+					attr_maxValue_arrays[roinum].scalar = (*iter2).maxValue;
+					attr_maxValue_arrays[roinum].spectrum.push_back((*iter2).maxValue);
+					DEBUG_STREAM << "maxValue    = " << attr_maxValue_arrays[roinum].scalar << endl;
+
+					attr_maxX_arrays[roinum].scalar = (*iter2).maxX;
+					attr_maxX_arrays[roinum].spectrum.push_back((*iter2).maxX);
+					DEBUG_STREAM << "maxX		= " << attr_maxX_arrays[roinum].scalar << endl;
+
+					attr_maxY_arrays[roinum].scalar = (*iter2).maxY;
+					attr_maxY_arrays[roinum].spectrum.push_back((*iter2).maxY);
+					DEBUG_STREAM << "maxY		= " << attr_maxY_arrays[roinum].scalar << endl;
+
+					DEBUG_STREAM << "++++++++++++++++++++++++++++++++" << endl;
+				}
+			}
+		}
+	}
+	catch(ProcessException& p)
+	{
+		ERROR_STREAM << "ERROR ProcessException" << endl;
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		//- throw exception
+		Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+									e.getErrMsg().c_str(),
+									"RoiCounters::read_roi");
+	}
+	DEBUG_STREAM << "RoiCounters::read_roi() - [END]" << endl;
+}
+
+void RoiCounters::remove_roi(std::string roiId)
+{
+	INFO_STREAM << "RoiCounters::remove_roi(" << roiId << ")" << endl;
+	//	Add your own code to control device here
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if((reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt)) != 0)
+		{
+			std::list<std::string> listRois;
+			listRois.push_back(roiId);
+			(reinterpret_cast<SoftOpRoiCounter*> (m_soft_operation.m_opt))->removeRois(listRois);
+		}
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		//- throw exception
+		Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+									e.getErrMsg().c_str(),
+									"RoiCounters::remove_roi");
+	}
+}
+
+bool RoiCounters::create_scalar_dynamic_attributes(void)
+{
+	DEBUG_STREAM << "RoiCounters::create_scalar_dynamic_attributes() - [BEGIN]" << endl;
+	INFO_STREAM << "Create all SCALAR dynamic attributes :" << endl;
+	if(nbRoiCounters > MAX_NB_ROICOUNTERS)
+	{
+		m_status_message.str("");
+		m_status_message << "Failed to instanciate dynamic attributes  - "
+		 << "nbRoiCounters property must not exceed : "
+		 << MAX_NB_ROICOUNTERS
+		 << std::endl;
+		ERROR_STREAM << m_status_message.str() << std::endl;
+		set_state(Tango::FAULT);
+		set_status(m_status_message.str());
+		return false;
+	}
+
+	//- add some dynamic attributes
+	try
+	{
+		std::stringstream ss_name;
+		ss_name.str("");
+		ss_name << "frameNumber";
+		create_attribute(ss_name.str(),
+						Tango::DEV_ULONG,
+						Tango::SCALAR,
+						Tango::READ,
+						Tango::OPERATOR,
+						" ",
+						"%d",
+						"The frameNumber",
+						&RoiCounters::read_stats_scalar_callback,
+						&RoiCounters::write_callback_null,
+						&attr_frameNumber_value);
+
+		for(size_t i = 0;i < nbRoiCounters;++i)
+		{
+			ss_name.str("");
+			ss_name << "x" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_ULONG,
+							Tango::SCALAR,
+							Tango::READ_WRITE,
+							Tango::OPERATOR,
+							" ",
+							"%d",
+							"The x coordinate of the Roi",
+							&RoiCounters::read_rois_callback,
+							&RoiCounters::write_rois_callback,
+							&attr_x_arrays[i]);
+
+			ss_name.str("");
+			ss_name << "y" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_ULONG,
+							Tango::SCALAR,
+							Tango::READ_WRITE,
+							Tango::OPERATOR,
+							" ",
+							"%d",
+							"The y coordinate of the Roi",
+							&RoiCounters::read_rois_callback,
+							&RoiCounters::write_rois_callback,
+							&attr_y_arrays[i]);
+
+			ss_name.str("");
+			ss_name << "width" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_ULONG,
+							Tango::SCALAR,
+							Tango::READ_WRITE,
+							Tango::OPERATOR,
+							" ",
+							"%d",
+							"The width of the Roi",
+							&RoiCounters::read_rois_callback,
+							&RoiCounters::write_rois_callback,
+							&attr_width_arrays[i]);
+
+			ss_name.str("");
+			ss_name << "height" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_ULONG,
+							Tango::SCALAR,
+							Tango::READ_WRITE,
+							Tango::OPERATOR,
+							" ",
+							"%d",
+							"The height of the Roi",
+							&RoiCounters::read_rois_callback,
+							&RoiCounters::write_rois_callback,
+							&attr_height_arrays[i]);
+
+			ss_name.str("");
+			ss_name << "coordinates" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_STRING,
+							Tango::SCALAR,
+							Tango::READ_WRITE,
+							Tango::OPERATOR,
+							" ",
+							"%s",
+							"The full coordinates of the Roi:\n"
+							"take a string of 4 numbers seperated by any other character\n"
+							"and will parse them into x, y, width and height in that exact order.",
+							&RoiCounters::read_rois_callback,
+							&RoiCounters::write_rois_callback,
+							&attr_coordinates_arrays[i]);
+
+			ss_name.str("");
+			ss_name << "sum" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_DOUBLE,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%.2f",
+							"The sum of pixels in the Roi (Scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_sum_arrays[i].scalar);
+
+
+			ss_name.str("");
+			ss_name << "sumSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_DOUBLE,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The sum of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_sum_arrays[i].spectrum);
+
+			ss_name.str("");
+			ss_name << "average" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_DOUBLE,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%.2f",
+							"The average of pixels in the Roi (scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_average_arrays[i].scalar);
+
+			ss_name.str("");
+			ss_name << "averageSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_DOUBLE,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The average of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_average_arrays[i].spectrum);
+
+			ss_name.str("");
+			ss_name << "std" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_DOUBLE,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%.2f",
+							"The std deviation of pixels in the Roi (scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_std_arrays[i].scalar);
+
+			ss_name.str("");
+			ss_name << "stdSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_DOUBLE,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The std deviation of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_std_arrays[i].spectrum);
+
+			ss_name.str("");
+			ss_name << "minValue" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_DOUBLE,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%.2f",
+							"The min of pixels in the Roi (scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_minValue_arrays[i].scalar);
+
+			ss_name.str("");
+			ss_name << "minValueSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_DOUBLE,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The min of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_minValue_arrays[i].spectrum);
+
+			ss_name.str("");
+			ss_name << "minX" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_LONG,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%d",
+							"The coordinate X of the min of pixels in the Roi (scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_minX_arrays[i].scalar);
+
+			ss_name.str("");
+			ss_name << "minXSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_LONG,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The coordinate X of the min of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_minX_arrays[i].spectrum);
+
+			ss_name.str("");
+			ss_name << "minY" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_LONG,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%d",
+							"The coordinate Y of the min of pixels in the Roi (scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_minY_arrays[i].scalar);
+
+			ss_name.str("");
+			ss_name << "minYSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_LONG,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The coordinate Y of the min of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_minY_arrays[i].spectrum);
+
+			ss_name.str("");
+			ss_name << "maxValue" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_DOUBLE,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%.2f",
+							"The max of pixels in the Roi (scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_maxValue_arrays[i].scalar);
+
+			ss_name.str("");
+			ss_name << "maxValueSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_DOUBLE,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The max of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_maxValue_arrays[i].spectrum);
+
+			ss_name.str("");
+			ss_name << "maxX" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_LONG,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%d",
+							"The coordinate X of the max of pixels in the Roi (scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_maxX_arrays[i].scalar);
+
+			ss_name.str("");
+			ss_name << "maxXSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_LONG,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The coordinate X of the max of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_maxX_arrays[i].spectrum);
+
+			ss_name.str("");
+			ss_name << "maxY" << i;
+			create_attribute(ss_name.str(),
+							Tango::DEV_LONG,
+							Tango::SCALAR,
+							Tango::READ,
+							Tango::OPERATOR,
+							" ",
+							"%d",
+							"The coordinate Y of the max of pixels in the Roi (scalar)",
+							&RoiCounters::read_stats_scalar_callback,
+							&RoiCounters::write_callback_null,
+							&attr_maxY_arrays[i].scalar);
+
+			ss_name.str("");
+			ss_name << "maxYSpectrum" << i;
+			create_attribute(ss_name.str(),
+				Tango::DEV_LONG,
+				Tango::SPECTRUM,
+				Tango::READ,
+				Tango::OPERATOR,
+				" ",
+				"%.2f",
+				"The coordinate Y of the max of pixels in the Roi (Spectrum)",
+				&RoiCounters::read_stats_spectrum_callback,
+				&RoiCounters::write_callback_null,
+				&attr_maxY_arrays[i].spectrum);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		std::string err("failed to instanciate dynamic attributes !");
+		ERROR_STREAM << err << std::endl;
+		ERROR_STREAM << df << std::endl;
+		set_state(Tango::FAULT);
+		set_status(err);
+		return false;
+	}
+	catch(...)
+	{
+		set_state(Tango::FAULT);
+		set_status("failed to instanciate dynamic attributes !");
+		return false;
+	}
+	DEBUG_STREAM << "RoiCounters::create_scalar_dynamic_attributes() - [END]" << endl;
+	return true;
+}
+
+bool RoiCounters::create_image_dynamic_attributes(void)
+{
+	INFO_STREAM << "Create all IMAGE dynamic attributes :" << endl;
+	//- add image dynamic attribute
+	if(nbRoiCounters > MAX_NB_ROICOUNTERS)
+	{
+		m_status_message.str("");
+		m_status_message << "Failed to instanciate dynamic attributes  - "
+		 << "nbRoiCounters property must not exceed : "
+		 << MAX_NB_ROICOUNTERS
+		 << std::endl;
+		ERROR_STREAM << m_status_message.str() << std::endl;
+		set_state(Tango::FAULT);
+		set_status(m_status_message.str());
+		return false;
+	}
+
+	//- create image dyn attr (UChar, UShort, Short, ULong, Long)
+	std::string class_name = "LimaDetector";
+	std::string device_name_generic;
+	Tango::DbDatum db_datum;
+	std::string server_name = Tango::Util::instance()->get_ds_name();
+	db_datum = (Tango::Util::instance()->get_database())->get_device_name(server_name, class_name);
+	db_datum >> device_name_generic;
+	Tango::DbData db_data;
+	db_data.push_back(Tango::DbDatum("DetectorPixelDepth"));
+	(Tango::Util::instance()->get_database())->get_device_property(device_name_generic, db_data);
+	std::string pixel_depth;
+	db_data[0] >> pixel_depth;
+	INFO_STREAM << "server_name = " << server_name << std::endl;
+	INFO_STREAM << "device_name_generic = " << device_name_generic << std::endl;
+	INFO_STREAM << "pixel_depth = " << pixel_depth << std::endl;
+
+	try
+	{
+		for(size_t i = 0;i < nbRoiCounters;++i)
+		{
+			std::stringstream ss_name;
+			ss_name << "image" << i;
+			INFO_STREAM << "\t- Create dynamic attribute [" << ss_name.str() << "]" << endl;
+			yat4tango::DynamicAttributeInfo dai;
+			dai.dev = this;
+			dai.tai.name = ss_name.str();
+			dai.tai.data_format = Tango::IMAGE;
+			dai.tai.max_dim_x = 100000;//- arbitrary big value
+			dai.tai.max_dim_y = 100000;//- arbitrary big value
+
+			if(pixel_depth == "8" || pixel_depth == "6" || pixel_depth == "2" || pixel_depth == "1")
+			{
+				dai.tai.data_type = Tango::DEV_UCHAR;
+			}
+			else if(pixel_depth == "12" || pixel_depth == "16" || pixel_depth == "14")
+			{
+				dai.tai.data_type = Tango::DEV_USHORT;
+			}
+			else if(pixel_depth == "16S")
+			{
+				dai.tai.data_type = Tango::DEV_SHORT;
+			}
+			else if(pixel_depth == "24" || pixel_depth == "28" ||pixel_depth == "32")
+			{
+				dai.tai.data_type = Tango::DEV_ULONG;
+			}
+			else if(pixel_depth == "32S")
+			{
+				dai.tai.data_type = Tango::DEV_LONG;
+			}
+			else
+			{
+				stringstream ss;
+				ss << "Failed to instanciate image dynamic attributes !" << endl;
+				ss << "DetectorPixelDepth " << "(" << pixel_depth << ") is not supported!" << endl;
+				ERROR_STREAM << ss.str() << std::endl;
+				set_state(Tango::FAULT);
+				set_status(ss.str());
+				return false;
+			}
+			/*
+				//- Check if specialDisplayType is set (FLOAT for example)
+				transform(specialDisplayType.begin(), specialDisplayType.end(), specialDisplayType.begin(), ::toupper);
+				if(specialDisplayType == "FLOAT") //- could be used by xpad for example
+				{
+					dai.tai.data_type = Tango::DEV_FLOAT;
+				}
+
+				//- Check if accumulation mode
+				memorizedAcquisitionMode = yat4tango::PropertyHelper::get_property<std::string>(this, "MemorizedAcquisitionMode");
+				if(memorizedAcquisitionMode == "ACCUMULATION")
+				{
+					dai.tai.data_type = Tango::DEV_ULONG;//force to 32 bits if ACCUMULATION MODE, this is due to Lima core.
+				}
+
+			 */
+			dai.tai.writable = Tango::READ;
+			dai.tai.disp_level = Tango::OPERATOR;
+
+			dai.rcb = yat4tango::DynamicAttributeReadCallback::instanciate(*this, &RoiCounters::read_image_callback);
+
+			//- add the dyn. attr. to the device
+			m_dim.dynamic_attributes_manager().add_attribute(dai);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		stringstream ss;
+		ss << "Failed to instanciate image dynamic attributes !" << endl;
+		for(unsigned i = 0;i < df.errors.length();i++)
+		{
+			ss << df.errors[i].desc << endl;
+		}
+		ERROR_STREAM << ss.str() << std::endl;
+		set_state(Tango::FAULT);
+		set_status(ss.str());
+		return false;
+	}
+	catch(...)
+	{
+		stringstream ss;
+		ss << "Failed to instanciate image dynamic attributes !" << endl;
+		ss << "Unknown Exception !" << endl;
+		ERROR_STREAM << ss.str() << endl;
+		set_state(Tango::FAULT);
+		set_status(ss.str());
+		return false;
+	}
+	return true;
+}
+
+void RoiCounters::read_stats_scalar_callback(yat4tango::DynamicAttributeReadCallbackData & cbd)
+{
+	DEBUG_STREAM << "RoiCounters::read_stats_scalar_callback(yat4tango::DynamicAttributeReadCallbackData& cbd) - [BEGIN]" << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	//- be sure the pointer to the dyn. attr. is valid
+	if(!cbd.dya)
+	{
+		THROW_DEVFAILED("INTERNAL_ERROR", "unexpected NULL pointer to dynamic attribute", "DynamicInterface::read_stats_scalar_callback");
+	}
+
+	try
+	{
+		void* val;
+		std::string attributeName = cbd.dya->get_name();
+
+		if(
+		(attributeName.find("sum") != std::string::npos) ||
+		(attributeName.find("average") != std::string::npos) ||
+		(attributeName.find("std") != std::string::npos) ||
+		(attributeName.find("minValue") != std::string::npos) ||
+		(attributeName.find("maxValue") != std::string::npos))
+		{
+			val = (Tango::DevDouble*)cbd.dya->get_user_data<Tango::DevDouble>();
+
+			//- set the attribute value
+			cbd.tga->set_value((Tango::DevDouble*)val);
+		}
+		else if(
+		(attributeName.find("minX") != std::string::npos) ||
+		(attributeName.find("minY") != std::string::npos) ||
+		(attributeName.find("maxX") != std::string::npos) ||
+		(attributeName.find("maxY") != std::string::npos))
+		{
+			val = (Tango::DevLong*)cbd.dya->get_user_data<Tango::DevLong>();
+
+			//- set the attribute value
+			cbd.tga->set_value((Tango::DevLong*)val);
+		}
+		else if(attributeName.find("frameNumber") != std::string::npos)
+		{
+			val = (Tango::DevULong*)cbd.dya->get_user_data<Tango::DevULong>();
+
+			//- set the attribute value
+			cbd.tga->set_value((Tango::DevULong*)val);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"RoiCounters::read_stats_scalar_callback");
+	}
+	DEBUG_STREAM << "RoiCounters::read_stats_scalar_callback(yat4tango::DynamicAttributeReadCallbackData& cbd) - [END]" << endl;
+}
+
+void RoiCounters::read_stats_spectrum_callback(yat4tango::DynamicAttributeReadCallbackData & cbd)
+{
+	DEBUG_STREAM << "RoiCounters::read_stats_spectrum_callback(yat4tango::DynamicAttributeReadCallbackData& cbd) - [BEGIN]" << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	//- be sure the pointer to the dyn. attr. is valid
+	if(!cbd.dya)
+	{
+		THROW_DEVFAILED("INTERNAL_ERROR", "unexpected NULL pointer to dynamic attribute", "DynamicInterface::read_stats_spectrum_callback");
+	}
+
+	try
+	{
+		std::string attributeName = cbd.dya->get_name();
+
+		if(
+		(attributeName.find("sumSpectrum") != std::string::npos) ||
+		(attributeName.find("averageSpectrum") != std::string::npos) ||
+		(attributeName.find("stdSpectrum") != std::string::npos) ||
+		(attributeName.find("minValueSpectrum") != std::string::npos) ||
+		(attributeName.find("maxValueSpectrum") != std::string::npos))
+		{
+			//- get user data
+			std::vector<Tango::DevDouble>* spectrum = cbd.dya->get_user_data<std::vector<Tango::DevDouble> >();
+			//- set the attribute value
+			cbd.tga->set_value((Tango::DevDouble*)(&spectrum->at(0)), spectrum->size());
+		}
+		else if(
+		(attributeName.find("minX") != std::string::npos) ||
+		(attributeName.find("minY") != std::string::npos) ||
+		(attributeName.find("maxX") != std::string::npos) ||
+		(attributeName.find("maxY") != std::string::npos))
+		{
+			//- get user data
+			std::vector<Tango::DevLong>* spectrum = cbd.dya->get_user_data<std::vector<Tango::DevLong> >();
+			//- set the attribute value
+			cbd.tga->set_value((Tango::DevLong*)(&spectrum->at(0)), spectrum->size());
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"RoiCounters::read_stats_spectrum_callback");
+	}
+	DEBUG_STREAM << "RoiCounters::read_stats_spectrum_callback(yat4tango::DynamicAttributeReadCallbackData& cbd) - [END]" << endl;
+}
+
+void RoiCounters::read_rois_callback(yat4tango::DynamicAttributeReadCallbackData & cbd)
+{
+	DEBUG_STREAM << "RoiCounters::read_rois_callback(yat4tango::DynamicAttributeReadCallbackData& cbd) - [BEGIN]" << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		void* val;
+		std::string attrName = cbd.tga->get_name();
+
+		//--------------------------------------------------------------
+		if(std::size_t pos = attrName.find("x") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(1);
+			int attrIndex;
+			std::istringstream(strIndex) >> attrIndex;
+			val = (Tango::DevULong *) & attr_x_arrays[attrIndex];
+		}
+		else if(std::size_t pos = attrName.find("y") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(1);
+			int attrIndex;
+			std::istringstream(strIndex) >> attrIndex;
+			val = (Tango::DevULong *) & attr_y_arrays[attrIndex];
+		}
+		else if(std::size_t pos = attrName.find("width") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(5);
+			int attrIndex;
+			std::istringstream(strIndex) >> attrIndex;
+			val = (Tango::DevULong *) & attr_width_arrays[attrIndex];
+		}
+		else if(std::size_t pos = attrName.find("height") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(6);
+			int attrIndex;
+			std::istringstream(strIndex) >> attrIndex;
+			val = (Tango::DevULong *) & attr_height_arrays[attrIndex];
+		}
+
+		if(std::size_t pos = attrName.find("coordinates") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(11);
+			int attrIndex;
+			std::stringstream ss;
+			std::istringstream(strIndex) >> attrIndex;
+
+			val = (Tango::DevString *) & attr_coordinates_arrays[attrIndex];
+
+			// Get the currrent coordinate values into the coordinate string
+			ss  << attr_x_arrays[attrIndex]
+				<< ", " << attr_y_arrays[attrIndex]
+				<< ", " << attr_width_arrays[attrIndex]
+				<< ", " << attr_height_arrays[attrIndex];
+			*((Tango::DevString*)val) = Tango::string_dup(ss.str().c_str());
+
+			cbd.tga->set_value((Tango::DevString *)val);
+		}
+		else
+		{
+			cbd.tga->set_value((Tango::DevULong *)val);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"RoiCounters::read_rois_callback");
+	}
+	DEBUG_STREAM << "RoiCounters::read_rois_callback(yat4tango::DynamicAttributeReadCallbackData& cbd) - [END]" << endl;
+}
+
+void RoiCounters::write_rois_callback(yat4tango::DynamicAttributeWriteCallbackData & cbd)
+{
+	INFO_STREAM << "RoiCounters::write_rois_callback(yat4tango::DynamicAttributeWriteCallbackData& cbd) - [BEGIN]" << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		std::string attrName = cbd.tga->get_name();
+		int attrIndex = -1;
+		void* val;
+		//- log
+		INFO_STREAM << "Write on attribute  : " << attrName << std::endl;
+
+		//--------------------------------------------------------------
+		if(attrName.find("x") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(1);
+			std::istringstream(strIndex) >> attrIndex;
+			val = (Tango::DevULong*)(&attr_x_arrays[attrIndex]);
+		}
+		else if(attrName.find("y") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(1);
+			std::istringstream(strIndex) >> attrIndex;
+			val = (Tango::DevULong*)(&attr_y_arrays[attrIndex]);
+		}
+		else if(attrName.find("width") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(5);
+			std::istringstream(strIndex) >> attrIndex;
+			val = (Tango::DevULong*)(&attr_width_arrays[attrIndex]);
+		}
+		else if(attrName.find("height") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(6);
+			std::istringstream(strIndex) >> attrIndex;
+			val = (Tango::DevULong*)(&attr_height_arrays[attrIndex]);
+		}
+
+		if(attrName.find("coordinates") != std::string::npos)
+		{
+			std::string strIndex = attrName.substr(11);
+			std::istringstream(strIndex) >> attrIndex;
+			val = (std::string*)(&attr_coordinates_arrays[attrIndex]);
+			cbd.tga->get_write_value(*((Tango::DevString*)val));
+			// Parse the coordinates written:
+			process_coordinates((Tango::DevString *)val, attrIndex);
+		}
+		else
+		{
+			cbd.tga->get_write_value(*((Tango::DevULong*)val));
+		}
+		//- get the attribute value
+
+
+		//- update rois in the processLib  : SoftOpRoiCounter
+		update_roi();
+
+		//memorize the attribute in its position in the vector property
+		__x.at(attrIndex) = attr_x_arrays[attrIndex];
+		__y.at(attrIndex) = attr_y_arrays[attrIndex];
+		__width.at(attrIndex) = attr_width_arrays[attrIndex];
+		__height.at(attrIndex) = attr_height_arrays[attrIndex];
+
+		yat4tango::PropertyHelper::set_property(this, "__x", __x);
+		yat4tango::PropertyHelper::set_property(this, "__y", __y);
+		yat4tango::PropertyHelper::set_property(this, "__width", __width);
+		yat4tango::PropertyHelper::set_property(this, "__height", __height);
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		//- throw exception
+		Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+									e.getErrMsg().c_str(),
+									"RoiCounters::write_rois_callback");
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"RoiCounters::write_rois_callback");
+	}
+	INFO_STREAM << "RoiCounters::write_rois_callback(yat4tango::DynamicAttributeWriteCallbackData& cbd) - [END]" << endl;
+}
+
+void RoiCounters::read_image_callback(yat4tango::DynamicAttributeReadCallbackData & cbd)
+{
+	DEBUG_STREAM << "RoiCounters::read_image_callback()" << cbd.dya->get_name() << endl;//  << cbd.dya->get_name() << endl;
+	try
+	{
+		if(!m_ct)
+			return;//NOP
+
+		//get the roi index
+		int roi_num = -1;
+		std::string str_index = cbd.dya->get_name().substr(5);
+		std::istringstream(str_index) >> roi_num;
+
+		long long counter = 0;
+		m_ct->video()->getLastImageCounter(counter);
+
+		if(counter > -1)
+		{
+			Data image_data;
+			m_ct->ReadImage(image_data, -1);
+
+			if(image_data.data() != 0)
+			{
+				switch(cbd.dya->get_tango_data_type())
+				{
+						//8 bits
+					case yat4tango::TangoTraits<Tango::DevUChar>::type_id:
+					{
+						DEBUG_STREAM << "image->set_value() : DevUChar" << endl;
+						m_image_data_roi = copy_roi_from_image<Tango::DevUChar>(image_data, roi_num);
+						cbd.tga->set_value((Tango::DevUChar*)(m_image_data_roi.data()),
+										attr_width_arrays[roi_num], //- width
+										attr_height_arrays[roi_num] //- height
+										);
+					}
+						break;
+
+						//16 bits
+					case yat4tango::TangoTraits<Tango::DevUShort>::type_id:
+					{
+						DEBUG_STREAM << "image->set_value() : DevUShort" << endl;
+						m_image_data_roi = copy_roi_from_image<Tango::DevUShort>(image_data, roi_num);
+						cbd.tga->set_value((Tango::DevUShort*)(m_image_data_roi.data()),
+										attr_width_arrays[roi_num], //- width
+										attr_height_arrays[roi_num] //- height
+										);
+					}
+						break;
+
+						//signed 16 bits
+					case yat4tango::TangoTraits<Tango::DevShort>::type_id:
+					{
+						DEBUG_STREAM << "image->set_value() : DevShort" << endl;
+						m_image_data_roi = copy_roi_from_image<Tango::DevShort>(image_data, roi_num);
+						cbd.tga->set_value((Tango::DevShort*)(m_image_data_roi.data()),
+										attr_width_arrays[roi_num], //- width
+										attr_height_arrays[roi_num] //- height
+										);
+					}
+						break;
+
+						//32 bits
+					case yat4tango::TangoTraits<Tango::DevULong>::type_id:
+					{
+						DEBUG_STREAM << "image->set_value() : DevULong" << endl;
+						m_image_data_roi = copy_roi_from_image<Tango::DevULong>(image_data, roi_num);
+						cbd.tga->set_value((Tango::DevULong*)(m_image_data_roi.data()),
+										attr_width_arrays[roi_num], //- width
+										attr_height_arrays[roi_num] //- height
+										);
+					}
+						break;
+						//signed 32 bits
+					case yat4tango::TangoTraits<Tango::DevLong>::type_id:
+					{
+						DEBUG_STREAM << "image->set_value() : DevLong" << endl;
+						m_image_data_roi = copy_roi_from_image<Tango::DevLong>(image_data, roi_num);
+						cbd.tga->set_value((Tango::DevLong*)(m_image_data_roi.data()),
+										attr_width_arrays[roi_num], //- width
+										attr_height_arrays[roi_num] //- height
+										);
+					}
+						break;
+						//FLOAT
+					case yat4tango::TangoTraits<Tango::DevFloat>::type_id:
+					{
+						DEBUG_STREAM << "image->set_value() : DevFloat" << endl;
+						m_image_data_roi = copy_roi_from_image<Tango::DevFloat>(image_data, roi_num);
+						cbd.tga->set_value((Tango::DevFloat*)(m_image_data_roi.data()),
+										attr_width_arrays[roi_num], //- width
+										attr_height_arrays[roi_num] //- height
+										);
+					}
+						break;
+
+						//ERROR : resolution not supported
+					default:
+						DEBUG_STREAM << "image->set_value() : ERROR, resolution not supported !" << endl;
+						//- throw exception
+						THROW_DEVFAILED("CONFIGURATION_ERROR",
+										"Tango data type of image DynamicAttribute, is not supported!\n",
+										"RoiCounters::read_image_callback");
+						break;
+				}
+			}
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		RETHROW_DEVFAILED(df,
+						"TANGO_DEVICE_ERROR",
+						std::string(df.errors[0].desc).c_str(),
+						"RoiCounters::read_image_callback");
+	}
+	catch(Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		//- throw exception
+		THROW_DEVFAILED("TANGO_DEVICE_ERROR",
+						e.getErrMsg().c_str(),
+						"RoiCounters::read_image_callback");
+	}
+}
+
+void RoiCounters::process_coordinates(Tango::DevString* attr_str, int attrIndex)
+{
+
+	// Get a string from the DevString:
+	std::string user_coordinates = (std::string)(*attr_str);
+
+	std::stringstream ss;
+
+	// Will contain parsed values
+	Tango::DevULong parsed_coordinates[NB_COORDINATES];
+
+	// State used to know what was the previous character
+	bool is_previous_char_numeric = false;
+	bool is_current_char_numeric = false;
+
+    int j=0;
+	int i=0;
+
+	// While there are still characters to paste and there are still numbers to find:
+    while((j==0 || user_coordinates[j-1] != '\0') && i<NB_COORDINATES)
+    {
+		bool is_current_char_numeric = isdigit(user_coordinates[j]);
+
+		// If current char is not a number and previous one was a number
+        if(!(is_current_char_numeric) && is_previous_char_numeric)
+        {
+            ss >> parsed_coordinates[i]; 	// Push the numbers into the tab
+            ss.clear(); 		// Init the stringstream used to receive numeral characters
+            is_previous_char_numeric = false;		// Current char is not a number
+            i++;				// Found one number, can move to next one
+        }
+		// If current char is a number
+        if(is_current_char_numeric)
+        {
+            ss << user_coordinates[j];		// Push numeral character into stringstream
+            is_previous_char_numeric = true;		// Current char is a number
+        }
+        j++;					// Moving to next character
+    }
+	// If didn't find 4 numbers, throw exception
+    if(i<NB_COORDINATES)
+	{
+		Tango::Except::throw_exception(	"INVALID_COORDINATE_ENTRY",
+										"Invalid format: Enter at least " YAT_XSTR(NB_COORDINATES) " numbers",
+										"RoiCounter::process_coordinates");
+	}
+	// Else fill the variable
+	else
+	{
+		attr_x_arrays[attrIndex] = parsed_coordinates[0];
+		attr_y_arrays[attrIndex] = parsed_coordinates[1];
+		attr_width_arrays[attrIndex] = parsed_coordinates[2];
+		attr_height_arrays[attrIndex] = parsed_coordinates[3];
+	}
+}
 
 /*----- PROTECTED REGION END -----*/	//	RoiCounters::namespace_ending
 } //	namespace

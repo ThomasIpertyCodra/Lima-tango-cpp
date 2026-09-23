@@ -126,6 +126,9 @@ SVC_OBJS =      \
         $(OBJDIR)/$(PACKAGE_NAME).o \
         $(OBJDIR)/$(PACKAGE_NAME)Class.o \
         $(OBJDIR)/$(PACKAGE_NAME)StateMachine.o \
+        $(OBJDIR)/AutoROI.o \
+        $(OBJDIR)/FitGaussLM.o \
+        $(OBJDIR)/FitTask.o \
         $(OBJDIR)/ClassFactory.o  \
         $(OBJDIR)/main.o \
         $(ADDITIONAL_OBJS) 

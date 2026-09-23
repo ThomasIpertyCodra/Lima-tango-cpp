@@ -119,6 +119,12 @@ endif()
 # Target
 # --------------------------------------------------------------------------
 
+foreach(source_list sources EXTRA_SOURCES)
+    list(FILTER ${source_list} EXCLUDE
+        "/specifics/(Layout|Mask|RoiCounters|Rixs|FitGaussian)/(old_src/|main\\.cpp$|ClassFactory\\.cpp$)"
+    )
+endforeach()
+
 add_executable(${EXECUTABLE_NAME}
     ${sources}
     ${EXTRA_CAMERA_SOURCES}

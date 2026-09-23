@@ -40,6 +40,8 @@ static const char *RcsId = "$Id:  $";
 //=============================================================================
 
 
+#include <tango.h>
+#include <PogoHelper.h>
 #include <FitGaussian.h>
 #include <FitGaussianClass.h>
 
@@ -152,10 +154,38 @@ void FitGaussian::delete_device()
 {
 	DEBUG_STREAM << "FitGaussian::delete_device() " << device_name << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::delete_device) ENABLED START -----*/
-	
+
 	//	Delete device allocated objects
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	DELETE_DEVSTRING_ATTRIBUTE(attr_operationType_read);
+	DELETE_DEVSTRING_ATTRIBUTE(attr_version_read);
 	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::delete_device
+	DELETE_SCALAR_ATTRIBUTE(attr_AutoROIFound_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_AutoROIOriginX_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_AutoROIOriginY_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_AutoROIWidth_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_AutoROIHeight_read);
+
+	DELETE_SCALAR_ATTRIBUTE(attr_XProjFitConverged_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_XProjFitCenter_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_XProjFitMag_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_XProjFitSigma_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_XProjFitFWHM_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_XProjFitBG_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_XProjFitChi2_read);
+
+	DELETE_SCALAR_ATTRIBUTE(attr_YProjFitConverged_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_YProjFitCenter_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_YProjFitMag_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_YProjFitSigma_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_YProjFitFWHM_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_YProjFitBG_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_YProjFitChi2_read);
+
+	DELETE_DEVSTRING_ATTRIBUTE(attr_XProjPushTime_read);
+	DELETE_DEVSTRING_ATTRIBUTE(attr_YProjPushTime_read);
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::delete_device
 }
 
 //--------------------------------------------------------
@@ -168,10 +198,13 @@ void FitGaussian::init_device()
 {
 	DEBUG_STREAM << "FitGaussian::init_device() create device " << device_name << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::init_device_before) ENABLED START -----*/
-	
-	//	Initialization before get_device_property() call
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::init_device_before
+
+	INFO_STREAM << "FitGaussian::FitGaussian() create device " << device_name << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	// Initialise variables to default values
+	//--------------------------------------------
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::init_device_before
 	
 
 	//	Get the device properties from database
@@ -179,10 +212,110 @@ void FitGaussian::init_device()
 	
 
 	/*----- PROTECTED REGION ID(FitGaussian::init_device) ENABLED START -----*/
+
+
+	CREATE_DEVSTRING_ATTRIBUTE(attr_operationType_read, MAX_ATTRIBUTE_STRING_LENGTH);
+	CREATE_DEVSTRING_ATTRIBUTE(attr_version_read, MAX_ATTRIBUTE_STRING_LENGTH);
+
+	CREATE_SCALAR_ATTRIBUTE(attr_AutoROIFound_read, false);
+	CREATE_SCALAR_ATTRIBUTE(attr_AutoROIOriginX_read);
+	CREATE_SCALAR_ATTRIBUTE(attr_AutoROIOriginY_read);
+	CREATE_SCALAR_ATTRIBUTE(attr_AutoROIWidth_read);
+	CREATE_SCALAR_ATTRIBUTE(attr_AutoROIHeight_read);
+
+	CREATE_SCALAR_ATTRIBUTE(attr_XProjFitConverged_read, false);
+	CREATE_SCALAR_ATTRIBUTE(attr_XProjFitCenter_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_XProjFitMag_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_XProjFitSigma_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_XProjFitFWHM_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_XProjFitBG_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_XProjFitChi2_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_XProjFitNbIter_read);
 	
-	//	Initialize device
+
+	CREATE_SCALAR_ATTRIBUTE(attr_YProjFitConverged_read, false);
+	CREATE_SCALAR_ATTRIBUTE(attr_YProjFitCenter_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_YProjFitMag_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_YProjFitSigma_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_YProjFitFWHM_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_YProjFitBG_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_YProjFitChi2_read, 0.0);
+	CREATE_SCALAR_ATTRIBUTE(attr_YProjFitNbIter_read);
+
+	CREATE_DEVSTRING_ATTRIBUTE(attr_XProjPushTime_read, MAX_ATTRIBUTE_STRING_LENGTH);
+	CREATE_DEVSTRING_ATTRIBUTE(attr_YProjPushTime_read, MAX_ATTRIBUTE_STRING_LENGTH);
+
+    //By default INIT, need to ensure that all objets are OK before set the device to STANDBY
+    set_state(Tango::INIT);
+    m_is_device_initialized = false;
+    m_status_message.str("");
+	m_fit_task = 0;
+    m_ct = 0;
 	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::init_device
+    try
+    {
+        //- get the main object used to pilot the lima framework
+        //in fact LimaDetector is create the singleton control objet
+        //so this call, will only return existing object!
+        m_ct = ControlFactory::instance().get_control("FitGaussian");
+    }
+    catch (Exception& e)
+    {
+        INFO_STREAM << "Initialization Failed 1: " << e.getErrMsg() << endl;
+        m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+        m_is_device_initialized = false;
+        set_state(Tango::FAULT);
+        return;
+    }
+    catch (...)
+    {
+        INFO_STREAM << "Initialization Failed : UNKNOWN" << endl;
+        m_status_message << "Initialization Failed : UNKNOWN" << endl;
+        set_state(Tango::FAULT);
+        m_is_device_initialized = false;
+        return;
+    }
+
+    m_is_device_initialized = true;
+
+	//write at init, only if device is correctly initialized
+    if (m_is_device_initialized)
+    {
+		// AddOp()
+		INFO_STREAM << "Write tango hardware at Init - Add Operations to the processLib." << endl;
+		m_operation_type = memorizedOperationType;
+		delete_external_operation(memorizedOperationLevel);
+		m_map_operations.clear();
+		add_external_operation(memorizedOperationLevel);
+
+		INFO_STREAM << "Write tango hardware at Init - FitEnabled."  << endl;
+		Tango::WAttribute &fit_enabled = dev_attr->get_w_attr_by_name("FitEnabled");
+		attr_FitEnabled_write = fitEnabled;
+		fit_enabled.set_write_value(fitEnabled);
+		write_FitEnabled(fit_enabled);
+
+		INFO_STREAM << "Write tango hardware at Init - autoROIEnabled." << endl;
+		Tango::WAttribute &auto_roi = dev_attr->get_w_attr_by_name("AutoROIEnabled");
+		attr_AutoROIEnabled_write = autoROIEnabled;
+		auto_roi.set_write_value(autoROIEnabled);
+		write_AutoROIEnabled(auto_roi);
+
+		INFO_STREAM << "Write tango hardware at Init - xProjEnabled." << endl;
+		Tango::WAttribute &xproj_enabled = dev_attr->get_w_attr_by_name("XProjEnabled");
+		attr_XProjEnabled_write = xProjEnabled;
+		xproj_enabled.set_write_value(xProjEnabled);
+		write_XProjEnabled(xproj_enabled);
+
+		INFO_STREAM << "Write tango hardware at Init - yProjEnabled." << endl;
+		Tango::WAttribute &yproj_enabled = dev_attr->get_w_attr_by_name("YProjEnabled");
+		attr_YProjEnabled_write = yProjEnabled;
+		yproj_enabled.set_write_value(yProjEnabled);
+		write_YProjEnabled(yproj_enabled);
+
+
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::init_device
 }
 
 //--------------------------------------------------------
@@ -194,10 +327,12 @@ void FitGaussian::init_device()
 void FitGaussian::get_device_property()
 {
 	/*----- PROTECTED REGION ID(FitGaussian::get_device_property_before) ENABLED START -----*/
-	
-	//	Initialize property data members
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::get_device_property_before
+
+	//	Initialize your default values here (if not done with  POGO).
+	//------------------------------------------------------------------
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::get_device_property_before
 
 
 	//	Read device properties from database.
@@ -411,10 +546,25 @@ void FitGaussian::get_device_property()
 	}
 
 	/*----- PROTECTED REGION ID(FitGaussian::get_device_property_after) ENABLED START -----*/
-	
-	//	Check device property data members init
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::get_device_property_after
+
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "false", 	"FitEnabled");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "false", 	"AutoROIEnabled");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "5.0",		"AutoROIMagnificationFactorX");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "1.5",		"AutoROIMagnificationFactorY");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "5.86",	"PixelSizeX");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "5.86",	"PixelSizeY");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "2.55",	"OpticalMagnification");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "256",		"FitNbIterationsMax");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "1.e-6",	"FitTolerance");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "NONE", 	"MemorizedOperationType");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "0",		"MemorizedOperationLevel");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "true", 	"XProjEnabled");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "true",	"YProjEnabled");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "false",	"ProfileFitFixedBg");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "0",		"RotationAngle");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "true",		"DisplayRotatedImage");
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::get_device_property_after
 }
 
 //--------------------------------------------------------
@@ -427,10 +577,37 @@ void FitGaussian::always_executed_hook()
 {
 	INFO_STREAM << "FitGaussian::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::always_executed_hook) ENABLED START -----*/
-	
-	//	code always executed before all requests
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::always_executed_hook
+
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        if(!m_is_device_initialized)//nothing to do ! device need init
+            return;
+
+        //- get the singleton control objet used to pilot the lima framework
+        m_ct = ControlFactory::instance().get_control("FitGaussian");
+
+        dev_state();
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << e.getErrMsg() << endl;
+        m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+        //- throw exception
+        set_state(Tango::FAULT);
+        m_is_device_initialized = false;
+        return;
+    }
+    catch (Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        INFO_STREAM << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+        m_status_message << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+        m_is_device_initialized = false;
+        set_state(Tango::FAULT);
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::always_executed_hook
 }
 
 //--------------------------------------------------------
@@ -443,10 +620,11 @@ void FitGaussian::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
 	DEBUG_STREAM << "FitGaussian::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_attr_hardware) ENABLED START -----*/
-	
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_attr_hardware
+
+	DEBUG_STREAM << "FitGaussian::read_attr_hardware(vector<long> &attr_list) entering... "<< endl;
+	//	Add your own code here
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -462,10 +640,25 @@ void FitGaussian::read_version(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_version(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_version) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_version_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_version
+
+	DEBUG_STREAM << "FitGaussian::read_version(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		strcpy(*attr_version_read, CURRENT_VERSION);
+		attr.set_value(attr_version_read);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_version()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_version
 }
 //--------------------------------------------------------
 /**
@@ -480,10 +673,25 @@ void FitGaussian::read_operationType(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_operationType(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_operationType) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationType_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_operationType
+
+	DEBUG_STREAM << "FitGaussian::read_operationType(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		strcpy(*attr_operationType_read, m_operation_type.c_str());
+		attr.set_value(attr_operationType_read);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_operationType()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_operationType
 }
 //--------------------------------------------------------
 /**
@@ -501,9 +709,29 @@ void FitGaussian::write_FitEnabled(Tango::WAttribute &attr)
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(FitGaussian::write_FitEnabled) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_FitEnabled
+
+	DEBUG_STREAM << "FitGaussian::write_FitEnabled(Tango::WAttribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		attr.get_write_value(attr_FitEnabled_write);
+		if(m_fit_task)
+		{
+			m_fit_task->set_fit_enabled(attr_FitEnabled_write);
+			yat4tango::PropertyHelper::set_property(this, "FitEnabled", attr_FitEnabled_write);
+		}
+	}
+	catch (Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										  "TANGO_DEVICE_ERROR",
+										  std::string(df.errors[0].desc).c_str(),
+										  "FitGaussian::write_FitEnabled");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_FitEnabled
 }
 //--------------------------------------------------------
 /**
@@ -521,9 +749,29 @@ void FitGaussian::write_AutoROIEnabled(Tango::WAttribute &attr)
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(FitGaussian::write_AutoROIEnabled) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_AutoROIEnabled
+
+	DEBUG_STREAM << "FitGaussian::write_AutoROIEnabled(Tango::WAttribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		attr.get_write_value(attr_AutoROIEnabled_write);
+		if(m_fit_task)
+		{
+			m_fit_task->set_auto_roi_enabled(attr_AutoROIEnabled_write);
+			yat4tango::PropertyHelper::set_property(this, "AutoROIEnabled", attr_AutoROIEnabled_write);
+		}
+	}
+	catch (Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										  "TANGO_DEVICE_ERROR",
+										  std::string(df.errors[0].desc).c_str(),
+										  "FitGaussian::write_AutoROIEnabled");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_AutoROIEnabled
 }
 //--------------------------------------------------------
 /**
@@ -538,10 +786,35 @@ void FitGaussian::read_AutoROIFound(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_AutoROIFound(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_AutoROIFound) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_AutoROIFound_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIFound
+
+	DEBUG_STREAM << "FitGaussian::read_AutoROIFound(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("AutoROIConverged"))
+		{
+			*attr_AutoROIFound_read = false;
+			attr.set_value(attr_AutoROIFound_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_AutoROIFound_read = yat::any_cast<Tango::DevBoolean>(m_fit_task->get_param("AutoROIConverged"));
+			attr.set_value(attr_AutoROIFound_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitConverged()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIFound
 }
 //--------------------------------------------------------
 /**
@@ -556,10 +829,34 @@ void FitGaussian::read_AutoROIOriginX(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_AutoROIOriginX(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_AutoROIOriginX) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_AutoROIOriginX_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIOriginX
+
+	DEBUG_STREAM << "FitGaussian::read_AutoROIOriginX(Tango::Attribute &attr) entering... "<< endl;
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("AutoROIOriginX"))
+		{
+			*attr_AutoROIOriginX_read = 0;
+			attr.set_value(attr_AutoROIOriginX_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_AutoROIOriginX_read = yat::any_cast<Tango::DevLong>(m_fit_task->get_param("AutoROIOriginX"));
+			attr.set_value(attr_AutoROIOriginX_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_AutoROIOriginX()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIOriginX
 }
 //--------------------------------------------------------
 /**
@@ -574,10 +871,34 @@ void FitGaussian::read_AutoROIOriginY(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_AutoROIOriginY(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_AutoROIOriginY) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_AutoROIOriginY_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIOriginY
+
+	DEBUG_STREAM << "FitGaussian::read_AutoROIOriginY(Tango::Attribute &attr) entering... "<< endl;
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("AutoROIOriginY"))
+		{
+			*attr_AutoROIOriginY_read = 0;
+			attr.set_value(attr_AutoROIOriginY_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_AutoROIOriginY_read = yat::any_cast<Tango::DevLong>(m_fit_task->get_param("AutoROIOriginY"));
+			attr.set_value(attr_AutoROIOriginY_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_AutoROIOriginY()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIOriginY
 }
 //--------------------------------------------------------
 /**
@@ -592,10 +913,34 @@ void FitGaussian::read_AutoROIWidth(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_AutoROIWidth(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_AutoROIWidth) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_AutoROIWidth_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIWidth
+
+	DEBUG_STREAM << "FitGaussian::read_AutoROIWidth(Tango::Attribute &attr) entering... "<< endl;
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("AutoROIWidth"))
+		{
+			*attr_AutoROIWidth_read = 0;
+			attr.set_value(attr_AutoROIWidth_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_AutoROIWidth_read = yat::any_cast<Tango::DevLong>(m_fit_task->get_param("AutoROIWidth"));
+			attr.set_value(attr_AutoROIWidth_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_AutoROIWidth()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIWidth
 }
 //--------------------------------------------------------
 /**
@@ -610,10 +955,34 @@ void FitGaussian::read_AutoROIHeight(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_AutoROIHeight(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_AutoROIHeight) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_AutoROIHeight_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIHeight
+
+	DEBUG_STREAM << "FitGaussian::read_AutoROIHeight(Tango::Attribute &attr) entering... "<< endl;
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("AutoROIHeight"))
+		{
+			*attr_AutoROIHeight_read = 0;
+			attr.set_value(attr_AutoROIHeight_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_AutoROIHeight_read = yat::any_cast<Tango::DevLong>(m_fit_task->get_param("AutoROIHeight"));
+			attr.set_value(attr_AutoROIHeight_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_AutoROIHeight()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_AutoROIHeight
 }
 //--------------------------------------------------------
 /**
@@ -631,9 +1000,29 @@ void FitGaussian::write_XProjEnabled(Tango::WAttribute &attr)
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(FitGaussian::write_XProjEnabled) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_XProjEnabled
+
+	DEBUG_STREAM << "FitGaussian::write_XProjEnabled(Tango::WAttribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		attr.get_write_value(attr_XProjEnabled_write);
+		if(m_fit_task)
+		{
+			m_fit_task->set_proj_enabled(attr_XProjEnabled_write, true);
+			yat4tango::PropertyHelper::set_property(this, "XProjEnabled", attr_XProjEnabled_write);
+		}
+	}
+	catch (Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										  "TANGO_DEVICE_ERROR",
+										  std::string(df.errors[0].desc).c_str(),
+										  "FitGaussian::write_XProjEnabled");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_XProjEnabled
 }
 //--------------------------------------------------------
 /**
@@ -648,10 +1037,35 @@ void FitGaussian::read_XProjFitConverged(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitConverged(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitConverged) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitConverged_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitConverged
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitConverged(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitConverged"))
+		{
+			*attr_XProjFitConverged_read = false;
+			attr.set_value(attr_XProjFitConverged_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_XProjFitConverged_read = yat::any_cast<Tango::DevBoolean>(m_fit_task->get_param("XProjFitConverged"));
+			attr.set_value(attr_XProjFitConverged_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitConverged()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitConverged
 }
 //--------------------------------------------------------
 /**
@@ -666,10 +1080,35 @@ void FitGaussian::read_XProjFitCenter(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitCenter(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitCenter) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitCenter_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitCenter
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitCenter(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitCenter"))
+		{
+			*attr_XProjFitCenter_read = std::nan("");
+			attr.set_value(attr_XProjFitCenter_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_XProjFitCenter_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("XProjFitCenter"));
+			attr.set_value(attr_XProjFitCenter_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitCenter()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitCenter
 }
 //--------------------------------------------------------
 /**
@@ -684,10 +1123,35 @@ void FitGaussian::read_XProjFitMag(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitMag(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitMag) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitMag_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitMag
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitMag(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitMag"))
+		{
+			*attr_XProjFitMag_read = std::nan("");
+			attr.set_value(attr_XProjFitMag_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_XProjFitMag_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("XProjFitMag"));
+			attr.set_value(attr_XProjFitMag_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitMag()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitMag
 }
 //--------------------------------------------------------
 /**
@@ -702,10 +1166,35 @@ void FitGaussian::read_XProjFitSigma(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitSigma(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitSigma) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitSigma_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitSigma
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitSigma(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitSigma"))
+		{
+			*attr_XProjFitSigma_read = std::nan("");
+			attr.set_value(attr_XProjFitSigma_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_XProjFitSigma_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("XProjFitSigma"));
+			attr.set_value(attr_XProjFitSigma_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitSigma()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitSigma
 }
 //--------------------------------------------------------
 /**
@@ -720,10 +1209,35 @@ void FitGaussian::read_XProjFitFWHM(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitFWHM(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitFWHM) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitFWHM_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitFWHM
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitFWHM(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitFWHM"))
+		{
+			*attr_XProjFitFWHM_read = std::nan("");
+			attr.set_value(attr_XProjFitFWHM_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_XProjFitFWHM_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("XProjFitFWHM"));
+			attr.set_value(attr_XProjFitFWHM_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitFWHM()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitFWHM
 }
 //--------------------------------------------------------
 /**
@@ -738,10 +1252,35 @@ void FitGaussian::read_XProjFitBG(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitBG(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitBG) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitBG_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitBG
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitBG(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitBG"))
+		{
+			*attr_XProjFitBG_read = std::nan("");
+			attr.set_value(attr_XProjFitBG_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_XProjFitBG_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("XProjFitBG"));
+			attr.set_value(attr_XProjFitBG_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitBG()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitBG
 }
 //--------------------------------------------------------
 /**
@@ -756,10 +1295,35 @@ void FitGaussian::read_XProjFitChi2(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitChi2(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitChi2) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitChi2_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitChi2
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitChi2(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitChi2"))
+		{
+			*attr_XProjFitChi2_read = std::nan("");
+			attr.set_value(attr_XProjFitChi2_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_XProjFitChi2_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("XProjFitChi2"));
+			attr.set_value(attr_XProjFitChi2_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitChi2()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitChi2
 }
 //--------------------------------------------------------
 /**
@@ -774,10 +1338,35 @@ void FitGaussian::read_XProjFitNbIter(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitNbIter(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitNbIter) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitNbIter_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitNbIter
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitNbIter(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitNbIter"))
+		{
+			*attr_XProjFitNbIter_read = 0;
+			attr.set_value(attr_XProjFitNbIter_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_XProjFitNbIter_read = yat::any_cast<Tango::DevULong>(m_fit_task->get_param("XProjFitNbIter"));
+			attr.set_value(attr_XProjFitNbIter_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitNbIter()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitNbIter
 }
 //--------------------------------------------------------
 /**
@@ -792,10 +1381,37 @@ void FitGaussian::read_XProjPushTime(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjPushTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjPushTime) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjPushTime_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjPushTime
+
+	DEBUG_STREAM << "FitGaussian::read_XProjPushTime(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjPushTime"))
+		{
+			strcpy(*attr_XProjPushTime_read, "N/A");
+			attr.set_value(attr_XProjPushTime_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+			return;
+		}
+		else
+		{
+			std::string push_time = yat::any_cast<std::string>(m_fit_task->get_param("XProjPushTime"));
+			strcpy(*attr_XProjPushTime_read, push_time.c_str());
+			attr.set_value(attr_XProjPushTime_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjPushTime()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjPushTime
 }
 //--------------------------------------------------------
 /**
@@ -813,9 +1429,29 @@ void FitGaussian::write_YProjEnabled(Tango::WAttribute &attr)
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(FitGaussian::write_YProjEnabled) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_YProjEnabled
+
+	DEBUG_STREAM << "FitGaussian::write_YProjEnabled(Tango::WAttribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		attr.get_write_value(attr_YProjEnabled_write);
+		if(m_fit_task)
+		{
+			m_fit_task->set_proj_enabled(attr_YProjEnabled_write, false);
+			yat4tango::PropertyHelper::set_property(this, "YProjEnabled", attr_YProjEnabled_write);
+		}
+	}
+	catch (Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										  "TANGO_DEVICE_ERROR",
+										  std::string(df.errors[0].desc).c_str(),
+										  "FitGaussian::write_YProjEnabled");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_YProjEnabled
 }
 //--------------------------------------------------------
 /**
@@ -830,10 +1466,35 @@ void FitGaussian::read_YProjFitConverged(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitConverged(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitConverged) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitConverged_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitConverged
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitConverged(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitConverged"))
+		{
+			*attr_YProjFitConverged_read = false;
+			attr.set_value(attr_YProjFitConverged_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_YProjFitConverged_read = yat::any_cast<Tango::DevBoolean>(m_fit_task->get_param("YProjFitConverged"));
+			attr.set_value(attr_YProjFitConverged_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitConverged()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitConverged
 }
 //--------------------------------------------------------
 /**
@@ -848,10 +1509,35 @@ void FitGaussian::read_YProjFitCenter(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitCenter(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitCenter) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitCenter_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitCenter
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitCenter(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitCenter"))
+		{
+			*attr_YProjFitCenter_read = std::nan("");
+			attr.set_value(attr_YProjFitCenter_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_YProjFitCenter_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("YProjFitCenter"));
+			attr.set_value(attr_YProjFitCenter_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitCenter()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitCenter
 }
 //--------------------------------------------------------
 /**
@@ -866,10 +1552,35 @@ void FitGaussian::read_YProjFitMag(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitMag(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitMag) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitMag_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitMag
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitMag(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitMag"))
+		{
+			*attr_YProjFitMag_read = std::nan("");
+			attr.set_value(attr_YProjFitMag_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_YProjFitMag_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("YProjFitMag"));
+			attr.set_value(attr_YProjFitMag_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitMag()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitMag
 }
 //--------------------------------------------------------
 /**
@@ -884,10 +1595,35 @@ void FitGaussian::read_YProjFitSigma(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitSigma(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitSigma) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitSigma_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitSigma
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitSigma(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitSigma"))
+		{
+			*attr_YProjFitSigma_read = std::nan("");
+			attr.set_value(attr_YProjFitSigma_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_YProjFitSigma_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("YProjFitSigma"));
+			attr.set_value(attr_YProjFitSigma_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitSigma()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitSigma
 }
 //--------------------------------------------------------
 /**
@@ -902,10 +1638,35 @@ void FitGaussian::read_YProjFitFWHM(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitFWHM(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitFWHM) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitFWHM_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitFWHM
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitFWHM(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitFWHM"))
+		{
+			*attr_YProjFitFWHM_read = std::nan("");
+			attr.set_value(attr_YProjFitFWHM_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_YProjFitFWHM_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("YProjFitFWHM"));
+			attr.set_value(attr_YProjFitFWHM_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitFWHM()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitFWHM
 }
 //--------------------------------------------------------
 /**
@@ -920,10 +1681,35 @@ void FitGaussian::read_YProjFitBG(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitBG(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitBG) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitBG_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitBG
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitBG(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitBG"))
+		{
+			*attr_YProjFitBG_read = std::nan("");
+			attr.set_value(attr_YProjFitBG_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_YProjFitBG_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("YProjFitBG"));
+			attr.set_value(attr_YProjFitBG_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitBG()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitBG
 }
 //--------------------------------------------------------
 /**
@@ -938,10 +1724,35 @@ void FitGaussian::read_YProjFitChi2(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitChi2(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitChi2) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitChi2_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitChi2
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitChi2(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitChi2"))
+		{
+			*attr_YProjFitChi2_read = std::nan("");
+			attr.set_value(attr_YProjFitChi2_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_YProjFitChi2_read = yat::any_cast<Tango::DevDouble>(m_fit_task->get_param("YProjFitChi2"));
+			attr.set_value(attr_YProjFitChi2_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitChi2()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitChi2
 }
 //--------------------------------------------------------
 /**
@@ -956,10 +1767,36 @@ void FitGaussian::read_YProjFitNbIter(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitNbIter(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitNbIter) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitNbIter_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitNbIter
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitNbIter(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitNbIter"))
+		{
+			*attr_YProjFitNbIter_read = 0;
+			attr.set_value(attr_YProjFitNbIter_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+		}
+		else
+		{
+			*attr_YProjFitNbIter_read = yat::any_cast<Tango::DevULong>(m_fit_task->get_param("YProjFitNbIter"));
+			attr.set_value(attr_YProjFitNbIter_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitNbIter()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitNbIter
 }
 //--------------------------------------------------------
 /**
@@ -974,10 +1811,37 @@ void FitGaussian::read_YProjPushTime(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjPushTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjPushTime) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjPushTime_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjPushTime
+
+	DEBUG_STREAM << "FitGaussian::read_YProjPushTime(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjPushTime"))
+		{
+			strcpy(*attr_YProjPushTime_read, "N/A");
+			attr.set_value(attr_YProjPushTime_read);
+			attr.set_quality(Tango::ATTR_ALARM);
+			return;
+		}
+		else
+		{
+			std::string push_time = yat::any_cast<std::string>(m_fit_task->get_param("YProjPushTime"));
+			strcpy(*attr_YProjPushTime_read, push_time.c_str());
+			attr.set_value(attr_YProjPushTime_read);
+			attr.set_quality(Tango::ATTR_VALID);
+		}
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjPushTime()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjPushTime
 }
 //--------------------------------------------------------
 /**
@@ -992,10 +1856,30 @@ void FitGaussian::read_operationList(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_operationList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_operationList) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationList_read, 1024);
+
+	DEBUG_STREAM << "FitGaussian::read_operationList(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    Tango::DevString *ptr = new Tango::DevString[ 1024 ];
+
+    int item_idx = 0;
+	ptr[item_idx] = CORBA::string_dup("");
+    for (std::map<long, operationParams >::iterator itMap = m_map_operations.begin(); itMap != m_map_operations.end(); ++itMap)
+    {
+		if(itMap->second.operationType != "NONE")
+		{
+			std::stringstream item("");
+			item << "runLevel = " << itMap->first
+			<< " : "
+			<< "Operation = " << itMap->second.operationType
+			<< " ( "<< itMap->second.operationValue<<" )";
+			ptr[item_idx] = CORBA::string_dup((item.str()).c_str());
+			item_idx++;
+		}
+    }
 	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_operationList
+    attr.set_value(ptr, item_idx, 0, true);
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_operationList
 }
 //--------------------------------------------------------
 /**
@@ -1010,10 +1894,35 @@ void FitGaussian::read_XProj(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProj(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProj) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProj_read, 4096);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProj
+
+	DEBUG_STREAM << "FitGaussian::read_XProj(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProj"))
+		{
+			attr.set_value(static_cast<Tango::DevDouble*>(nullptr), 0);
+			attr.set_quality(Tango::ATTR_ALARM);
+			return;
+		}
+
+		//- get the vector from the fit task and copy it in a persistent buffer before setting attribute value
+		const auto v = yat::any_cast<std::vector<double>>(m_fit_task->get_param("XProj"));
+		m_xproj_cache.assign(v.begin(), v.end());   // copie dans un buffer persistant
+		attr.set_value(m_xproj_cache.data(), m_xproj_cache.size());
+		attr.set_quality(Tango::ATTR_VALID);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProj()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProj
 }
 //--------------------------------------------------------
 /**
@@ -1028,10 +1937,35 @@ void FitGaussian::read_XProjFitted(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_XProjFitted(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_XProjFitted) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_XProjFitted_read, 4096);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitted
+
+	DEBUG_STREAM << "FitGaussian::read_XProjFitted(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("XProjFitted"))
+		{
+			attr.set_value(static_cast<Tango::DevDouble*>(nullptr), 0);
+			attr.set_quality(Tango::ATTR_ALARM);
+			return;
+		}
+
+		//- get the vector from the fit task and copy it in a persistent buffer before setting attribute value
+		const auto v = yat::any_cast<std::vector<double> >(m_fit_task->get_param("XProjFitted"));
+		m_xproj_fitted_cache.assign(v.begin(), v.end());
+		attr.set_value(m_xproj_fitted_cache.data(), m_xproj_fitted_cache.size());
+		attr.set_quality(Tango::ATTR_VALID);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_XProjFitted()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_XProjFitted
 }
 //--------------------------------------------------------
 /**
@@ -1046,10 +1980,35 @@ void FitGaussian::read_YProj(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProj(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProj) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProj_read, 4096);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProj
+
+	DEBUG_STREAM << "FitGaussian::read_YProj(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProj"))
+		{
+			attr.set_value(static_cast<Tango::DevDouble*>(nullptr), 0);
+			attr.set_quality(Tango::ATTR_ALARM);
+			return;
+		}
+
+		//- get the vector from the fit task and copy it in a persistent buffer before setting attribute value
+		const auto v = yat::any_cast<std::vector<double> >(m_fit_task->get_param("YProj"));
+		m_yproj_cache.assign(v.begin(), v.end());
+		attr.set_value(m_yproj_cache.data(), m_yproj_cache.size());
+		attr.set_quality(Tango::ATTR_VALID);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProj()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProj
 }
 //--------------------------------------------------------
 /**
@@ -1064,10 +2023,35 @@ void FitGaussian::read_YProjFitted(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_YProjFitted(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_YProjFitted) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_YProjFitted_read, 4096);
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitted
+
+	DEBUG_STREAM << "FitGaussian::read_YProjFitted(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		if(!m_fit_task || !m_fit_task->is_param_exist("YProjFitted"))
+		{
+			attr.set_value(static_cast<Tango::DevDouble*>(nullptr), 0);
+			attr.set_quality(Tango::ATTR_ALARM);
+			return;
+		}
+
+		//- get the vector from the fit task and copy it in a persistent buffer before setting attribute value
+		const auto v = yat::any_cast<std::vector<double> >(m_fit_task->get_param("YProjFitted"));
+		m_yproj_fitted_cache.assign(v.begin(), v.end());
+		attr.set_value(m_yproj_fitted_cache.data(), m_yproj_fitted_cache.size());
+		attr.set_quality(Tango::ATTR_VALID);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"FitGaussian::read_YProjFitted()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_YProjFitted
 }
 //--------------------------------------------------------
 /**
@@ -1082,10 +2066,50 @@ void FitGaussian::read_ROIImage(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "FitGaussian::read_ROIImage(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::read_ROIImage) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_ROIImage_read, 4096, 4096);
+
+	DEBUG_STREAM << "FitGaussian::read_ROIImage(Tango::Attribute &attr) entering... "<< endl;
 	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_ROIImage
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        if (!m_fit_task || !m_fit_task->is_param_exist("ROIImage"))
+        {
+            attr.set_value(static_cast<Tango::DevUShort*>(nullptr), 0, 0);
+            attr.set_quality(Tango::ATTR_ALARM);
+            return;
+        }
+
+        const cv::Mat img = yat::any_cast<cv::Mat>(m_fit_task->get_param("ROIImage"));
+
+        if (img.empty())
+        {
+            attr.set_value(static_cast<Tango::DevUShort*>(nullptr), 0, 0);
+            attr.set_quality(Tango::ATTR_ALARM);
+            return;
+        }
+
+        // cache persistant + deep copy (continu)
+        m_roi_img_cache = img.clone();
+
+        if (m_roi_img_cache.type() != CV_16UC1)
+        {
+            attr.set_value(static_cast<Tango::DevUShort*>(nullptr), 0, 0);
+            attr.set_quality(Tango::ATTR_ALARM);
+            return;
+        }
+
+        attr.set_value(reinterpret_cast<Tango::DevUShort*>(m_roi_img_cache.data), m_roi_img_cache.cols, m_roi_img_cache.rows);
+        attr.set_quality(Tango::ATTR_VALID);
+    }
+    catch (Tango::DevFailed& df)
+    {
+        Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+                                         string(df.errors[0].desc).c_str(),
+                                         "FitGaussian::read_ROIImage()");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::read_ROIImage
 }
 
 //--------------------------------------------------------
@@ -1116,11 +2140,35 @@ Tango::DevState FitGaussian::dev_state()
 {
 	DEBUG_STREAM << "FitGaussian::State()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::dev_state) ENABLED START -----*/
-	
-	Tango::DevState	argout = Tango::UNKNOWN; // replace by your own algorithm
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	FitGaussian::dev_state
+
+	Tango::DevState	argout = DeviceImpl::dev_state();
+	DEBUG_STREAM << "FitGaussian::dev_state(): entering... !" << endl;
+
+	//	Add your own code to control device here
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    stringstream DeviceStatus;
+    DeviceStatus << "";
+    Tango::DevState DeviceState = Tango::STANDBY;
+    if (!m_is_device_initialized)
+    {
+        INFO_STREAM << "m_status_message = " << m_status_message.str() << endl;
+        DeviceState = Tango::FAULT;
+        DeviceStatus << m_status_message.str();
+    }
+    else
+    {
+        // state & status are retrieved from Factory, Factory is updated by Generic device
+        DeviceState = ControlFactory::instance().get_state();
+        DeviceStatus << ControlFactory::instance().get_status();
+    }
+
+    set_state(DeviceState);
+    set_status(DeviceStatus.str());
+
+    argout = DeviceState;
+    return argout;
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::dev_state
 	set_state(argout);    // Give the state to Tango.
 	if (argout!=Tango::ALARM)
 		DeviceImpl::dev_state();
@@ -1128,8 +2176,141 @@ Tango::DevState FitGaussian::dev_state()
 }
 
 /*----- PROTECTED REGION ID(FitGaussian::namespace_ending) ENABLED START -----*/
+void FitGaussian::read_FitEnabled(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "FitGaussian::read_FitEnabled(Tango::Attribute &attr) entering... "<< endl;
+}
 
-//	Additional Methods
+void FitGaussian::read_AutoROIEnabled(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "FitGaussian::read_AutoROIEnabled(Tango::Attribute &attr) entering... "<< endl;
+}
+
+void FitGaussian::read_XProjEnabled(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "FitGaussian::read_XProjEnabled(Tango::Attribute &attr) entering... "<< endl;
+}
+
+void FitGaussian::read_YProjEnabled(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "FitGaussian::read_YProjEnabled(Tango::Attribute &attr) entering... "<< endl;
+}
+
+void FitGaussian::delete_external_operation(long level)
+{
+    DEBUG_STREAM << "FitGaussian::delete_external_operation() entering ... " << endl;
+    //free old operation
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    if (m_ct != 0)
+    {
+        try
+        {
+			std::stringstream opId("");
+			opId << m_map_operations[level].opId;
+			INFO_STREAM << "\t- delOp [" << opId.str() << "]"<<endl;
+			m_ct->externalOperation()->delOp(opId.str());
+			m_map_operations.erase(level);
+        }
+        catch (Exception& e)
+        {
+
+            ERROR_STREAM << e.getErrMsg() << endl;
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           e.getErrMsg().c_str(),
+                                           "FitGaussian::delete_external_operation");
+        }
+    }
+}
+
+void FitGaussian::add_external_operation(long level)
+{
+    DEBUG_STREAM << "FitGaussian::add_external_operation() entering ... " << endl;
+    //add a new operation
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	transform(m_operation_type.begin(), m_operation_type.end(), m_operation_type.begin(), ::toupper);
+    if (m_ct != 0)
+    {
+        try
+        {
+            if (m_operation_type == "FIT")
+            {
+                //create new operation
+                std::stringstream opId("");
+                SoftOpInstance op;
+				opId << level<<":"<<m_operation_type;//<<" ("<<m_operation_value<<")";
+				INFO_STREAM << "\t- addOp [" << opId.str() << "]"<<endl;
+				operationParams params = {opId.str(), m_operation_type, "0"};
+				m_map_operations[level] = params;
+                m_ct->externalOperation()->addOp(USER_LINK_TASK, opId.str(), level, op);
+
+				//prepare FitTask
+				FitTask* task = new FitTask("NONE", this);
+
+				//set FitTask parameters from device properties
+				task->set_operation_type(m_operation_type);
+				task->set_fit_enabled(fitEnabled);
+				task->set_pixel_size_x(pixelSizeX);
+				task->set_pixel_size_y(pixelSizeY);
+				task->set_optical_magnification(opticalMagnification);
+				task->set_fit_nb_iterations_max(fitNbIterationsMax);
+				task->set_fit_tolerance(fitTolerance);
+				task->set_auto_roi_enabled(autoROIEnabled);
+				task->set_auto_roi_factor_x(autoROIMagnificationFactorX);
+				task->set_auto_roi_factor_y(autoROIMagnificationFactorY);
+				task->set_proj_enabled(xProjEnabled, true);
+				task->set_proj_enabled(yProjEnabled, false);
+				task->set_profilefit_fixedbg(profileFitFixedBg);
+				task->set_rotation_angle(rotationAngle);
+				task->set_display_rotated_image(displayRotatedImage);
+
+				m_fit_task = task;
+                (reinterpret_cast<SoftUserLinkTask*> (op.m_opt))->setLinkTask(task);
+                return;
+            }
+
+            //NOP : if(m_operation_type == "NONE")
+        }
+        catch (Exception& e)
+        {
+            ERROR_STREAM << e.getErrMsg() << endl;
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           e.getErrMsg().c_str(),
+                                           "FitGaussian::add_external_operation");
+        }
+        catch (yat::Exception& ex)
+        {
+            //throw_devfailed( ex );
+            ex.dump();
+            std::stringstream errMsg("");
+            for (unsigned i = 0; i < ex.errors.size(); i++)
+            {
+                errMsg << ex.errors[i].desc << endl;
+            }
+
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           errMsg.str().c_str(),
+                                           "FitGaussian::add_external_operation");
+        }
+    }
+}
+
+void* FitGaussian::get_data_ptr(const cv::Mat& img)
+{
+    switch(img.depth())
+    {
+        case CV_8U:  return const_cast<uint8_t*>(img.ptr<uint8_t>());
+        case CV_8S:  return const_cast<int8_t*>(img.ptr<int8_t>());
+        case CV_16U: return const_cast<uint16_t*>(img.ptr<uint16_t>());
+        case CV_16S: return const_cast<int16_t*>(img.ptr<int16_t>());
+        case CV_32S: return const_cast<int32_t*>(img.ptr<int32_t>());
+        case CV_32F: return const_cast<float*>(img.ptr<float>());
+        case CV_64F: return const_cast<double*>(img.ptr<double>());
+        default: throw std::runtime_error("Unsupported image type");
+    }
+}
 
 /*----- PROTECTED REGION END -----*/	//	FitGaussian::namespace_ending
 } //	namespace

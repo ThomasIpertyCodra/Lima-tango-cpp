@@ -660,7 +660,27 @@ void RoiCountersClass::create_static_attribute_list(vector<Tango::Attr *> &att_l
 	cout2 << defaultAttList.size() << " attributes in default list" << endl;
 
 	/*----- PROTECTED REGION ID(RoiCountersClass::create_static_att_list) ENABLED START -----*/
-	
+	defaultAttList.push_back("log");
+	defaultAttList.push_back("framenumber");
+	const char *roi_attributes[] = {
+		"x", "y", "width", "height", "coordinates", "image",
+		"sum", "sumspectrum", "average", "averagespectrum",
+		"std", "stdspectrum", "minvalue", "minvaluespectrum",
+		"minx", "minxspectrum", "miny", "minyspectrum",
+		"maxvalue", "maxvaluespectrum", "maxx", "maxxspectrum",
+		"maxy", "maxyspectrum"
+	};
+	for (unsigned int attribute_index = 0;
+		attribute_index < sizeof(roi_attributes) / sizeof(roi_attributes[0]);
+		++attribute_index)
+	{
+		for (unsigned int roi_index = 0; roi_index < MAX_NB_ROICOUNTERS; ++roi_index)
+		{
+			std::stringstream attribute_name;
+			attribute_name << roi_attributes[attribute_index] << roi_index;
+			defaultAttList.push_back(attribute_name.str());
+		}
+	}
 	/*----- PROTECTED REGION END -----*/	//	RoiCountersClass::create_static_att_list
 }
 

@@ -596,7 +596,7 @@ void MaskClass::create_static_attribute_list(vector<Tango::Attr *> &att_list)
 	cout2 << defaultAttList.size() << " attributes in default list" << endl;
 
 	/*----- PROTECTED REGION ID(MaskClass::create_static_att_list) ENABLED START -----*/
-	
+	defaultAttList.push_back("log");
 	/*----- PROTECTED REGION END -----*/	//	MaskClass::create_static_att_list
 }
 

@@ -1,4 +1,5 @@
 /*----- PROTECTED REGION ID(FitGaussian.h) ENABLED START -----*/
+
 //=============================================================================
 //
 // file :        FitGaussian.h
@@ -39,7 +40,45 @@
 #define FitGaussian_H
 
 #include <tango.h>
+//using namespace Tango;
 
+#include "Factory.h"
+#include <yat4tango/PropertyHelper.h>
+#include <yat/threading/Mutex.h>
+#include <yat/utils/XString.h>
+#include <yat/time/Timer.h>
+#include <yat/utils/StringTokenizer.h>
+#include <yat/utils/String.h>
+
+#include "lima/HwInterface.h"
+#include "lima/CtControl.h"
+#include "lima/CtAcquisition.h"
+#include "lima/CtImage.h"
+#include "lima/SoftOpId.h"
+#include "lima/SoftOpExternalMgr.h"
+#include "processlib/Data.h"
+#include "processlib/TaskMgr.h"
+#include <map>
+
+//-Fit
+#include "FitTask.h"
+
+
+//- OpenCV
+#include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+
+#define MAX_ATTRIBUTE_STRING_LENGTH 	256
+#define CURRENT_VERSION                 "1.1.0"
+
+/**
+ * @author	$Author:  $
+ * @version	$Revision:  $
+ */
+
+ //	Add your own constant definitions here.
+ //-----------------------------------------------
 
 /*----- PROTECTED REGION END -----*/	//	FitGaussian.h
 
@@ -52,7 +91,18 @@ namespace FitGaussian_ns
 {
 /*----- PROTECTED REGION ID(FitGaussian::Additional Class Declarations) ENABLED START -----*/
 
-//	Additional Class Declarations
+
+/**
+ * Class Description:
+ * Compute a Gaussian Fit according to Levenberg Marquardt method
+ */
+
+/*
+ *	Device States Description:
+*  Tango::STANDBY :
+*  Tango::RUNNING :
+*  Tango::FAULT :
+ */
 
 /*----- PROTECTED REGION END -----*/	//	FitGaussian::Additional Class Declarations
 
@@ -538,8 +588,50 @@ public:
 
 
 /*----- PROTECTED REGION ID(FitGaussian::Additional Method prototypes) ENABLED START -----*/
+public:
+Tango::DevBoolean	attr_FitEnabled_write;
+Tango::DevBoolean	attr_AutoROIEnabled_write;
+Tango::DevBoolean	attr_XProjEnabled_write;
+Tango::DevBoolean	attr_YProjEnabled_write;
+void read_FitEnabled(Tango::Attribute &attr);
+void read_AutoROIEnabled(Tango::Attribute &attr);
+void read_XProjEnabled(Tango::Attribute &attr);
+void read_YProjEnabled(Tango::Attribute &attr);
+	// return true if the device is correctly initialized in init_device
 
-//	Additional Method prototypes
+	bool is_device_initialized()
+	{
+		return m_is_device_initialized;
+	};
+
+	void delete_external_operation(long level);
+	void add_external_operation(long level);
+	void* get_data_ptr(const cv::Mat& img);
+
+protected :
+	//	Add your own data members here
+	//-----------------------------------------
+	struct operationParams
+	{
+		std::string opId;
+		std::string operationType;
+		std::string operationValue;
+	};
+
+	bool                            	m_is_device_initialized;
+	//Operations objects
+	std::stringstream               	m_status_message;
+	std::string                     	m_operation_type;
+	std::map<long, operationParams >    m_map_operations;
+	FitTask*        					m_fit_task;
+	std::vector<Tango::DevDouble> 		m_xproj_cache;
+	std::vector<Tango::DevDouble> 		m_xproj_fitted_cache;
+	std::vector<Tango::DevDouble> 		m_yproj_cache;
+	std::vector<Tango::DevDouble> 		m_yproj_fitted_cache;
+	cv::Mat								m_roi_img_cache;
+
+	//LIMA objects
+	lima::CtControl*               		m_ct;
 
 /*----- PROTECTED REGION END -----*/	//	FitGaussian::Additional Method prototypes
 };

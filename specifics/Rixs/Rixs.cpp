@@ -40,8 +40,12 @@ static const char *RcsId = "$Id:  $";
 //=============================================================================
 
 
+#include <tango.h>
+#include <PogoHelper.h>
 #include <Rixs.h>
 #include <RixsClass.h>
+
+using namespace std;
 
 /*----- PROTECTED REGION END -----*/	//	Rixs.cpp
 
@@ -135,10 +139,21 @@ void Rixs::delete_device()
 {
 	DEBUG_STREAM << "Rixs::delete_device() " << device_name << endl;
 	/*----- PROTECTED REGION ID(Rixs::delete_device) ENABLED START -----*/
-	
-	//	Delete device allocated objects
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::delete_device
+
+    INFO_STREAM << "Rixs::delete_device() delete device " << device_name << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    //    Delete device allocated objects
+	DELETE_DEVSTRING_ATTRIBUTE(attr_version_read);
+    DELETE_DEVSTRING_ATTRIBUTE(attr_operationType_read);
+    DELETE_DEVSTRING_ATTRIBUTE(attr_operationValue_read);
+	DELETE_SPECTRUM_ATTRIBUTE(attr_clusterCounter_read);
+	DELETE_SPECTRUM_ATTRIBUTE(attr_clusterArea_read);
+	DELETE_SPECTRUM_ATTRIBUTE(attr_clusterSum_read);
+	DELETE_SPECTRUM_ATTRIBUTE(attr_clusterCentroidX_read);
+	DELETE_SPECTRUM_ATTRIBUTE(attr_clusterCentroidY_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_nbClusterValid_read);
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::delete_device
 }
 
 //--------------------------------------------------------
@@ -151,10 +166,13 @@ void Rixs::init_device()
 {
 	DEBUG_STREAM << "Rixs::init_device() create device " << device_name << endl;
 	/*----- PROTECTED REGION ID(Rixs::init_device_before) ENABLED START -----*/
-	
-	//	Initialization before get_device_property() call
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::init_device_before
+
+    INFO_STREAM << "Rixs::init_device() create device " << device_name << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    // Initialise variables to default values
+    //--------------------------------------------
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::init_device_before
 	
 
 	//	Get the device properties from database
@@ -162,10 +180,186 @@ void Rixs::init_device()
 	
 
 	/*----- PROTECTED REGION ID(Rixs::init_device) ENABLED START -----*/
+
 	
-	//	Initialize device
+	CREATE_DEVSTRING_ATTRIBUTE(attr_version_read, MAX_ATTRIBUTE_STRING_LENGTH);
+    CREATE_DEVSTRING_ATTRIBUTE(attr_operationType_read, MAX_ATTRIBUTE_STRING_LENGTH);
+    CREATE_DEVSTRING_ATTRIBUTE(attr_operationValue_read, MAX_ATTRIBUTE_STRING_LENGTH);
+	CREATE_SPECTRUM_ATTRIBUTE(attr_clusterCounter_read, 100000);
+	CREATE_SPECTRUM_ATTRIBUTE(attr_clusterArea_read, 100000);
+	CREATE_SPECTRUM_ATTRIBUTE(attr_clusterSum_read, 100000);
+	CREATE_SPECTRUM_ATTRIBUTE(attr_clusterCentroidX_read, 100000);
+	CREATE_SPECTRUM_ATTRIBUTE(attr_clusterCentroidY_read, 100000);
+	CREATE_SCALAR_ATTRIBUTE(attr_nbClusterValid_read);
+    //By default INIT, need to ensure that all objets are OK before set the device to STANDBY
+    set_state(Tango::INIT);
+    m_is_device_initialized = false;
+    m_status_message.str("");
+	m_map_operations.clear();
+    m_rixs_tasks.clear();
+    m_ct = 0;
 	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::init_device
+    try
+    {
+        //- get the main object used to pilot the lima framework
+        //in fact LimaDetector is create the singleton control objet
+        //so this call, will only return existing object!
+        m_ct = ControlFactory::instance().get_control("Rixs");
+    }
+    catch (Exception& e)
+    {
+        INFO_STREAM << "Initialization Failed 1: " << e.getErrMsg() << endl;
+        m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+        m_is_device_initialized = false;
+        set_state(Tango::FAULT);
+        return;
+    }
+    catch (...)
+    {
+        INFO_STREAM << "Initialization Failed : UNKNOWN" << endl;
+        m_status_message << "Initialization Failed : UNKNOWN" << endl;
+        set_state(Tango::FAULT);
+        m_is_device_initialized = false;
+        return;
+    }
+
+    m_is_device_initialized = true;
+
+    //write at init, only if device is correctly initialized
+    if (m_is_device_initialized)
+    {
+
+        try
+        {
+			try
+			{
+			// write minAreaCluster At Init
+			INFO_STREAM << "Write tango hardware at Init - minAreaCluster." << endl;
+			Tango::WAttribute &minAreaCluster = dev_attr->get_w_attr_by_name("minAreaCluster");
+			attr_minAreaCluster_write = yat4tango::PropertyHelper::get_memorized_attribute<Tango::DevLong>(this, "minAreaCluster");
+			minAreaCluster.set_write_value(attr_minAreaCluster_write);
+			write_minAreaCluster(minAreaCluster);
+
+			// write maxAreaCluster At Init
+			INFO_STREAM << "Write tango hardware at Init - maxAreaCluster." << endl;
+			Tango::WAttribute &maxAreaCluster = dev_attr->get_w_attr_by_name("maxAreaCluster");
+			attr_maxAreaCluster_write = yat4tango::PropertyHelper::get_memorized_attribute<Tango::DevLong>(this, "maxAreaCluster");
+			maxAreaCluster.set_write_value(attr_maxAreaCluster_write);
+			write_maxAreaCluster(maxAreaCluster);
+
+
+			// write drawClusterEnabled At Init
+			INFO_STREAM << "Write tango hardware at Init - drawClusterEnabled." << endl;
+			Tango::WAttribute &drawClusterEnabled = dev_attr->get_w_attr_by_name("drawClusterEnabled");
+			std::string cluster_flag = yat4tango::PropertyHelper::get_memorized_attribute<std::string>(this, "drawClusterEnabled");
+			//in order to avoid bug who convert empty string to 1 (#Jira: CPPAPIS-255)
+			if(cluster_flag =="")
+			{
+				Tango::Except::throw_exception(	"UNKNOWN_ERROR",
+												"drawClusterEnabled Attribute Property __value is empty !",
+												"Rixs::init_device");
+			}
+			attr_drawClusterEnabled_write = yat::StringUtil::to_num<Tango::DevBoolean>(cluster_flag);
+			drawClusterEnabled.set_write_value(attr_drawClusterEnabled_write);
+			write_drawClusterEnabled(drawClusterEnabled);
+
+			// write drawCentroidEnabled At Init
+			INFO_STREAM << "Write tango hardware at Init - drawCentroidEnabled." << endl;
+			Tango::WAttribute &drawCentroidEnabled = dev_attr->get_w_attr_by_name("drawCentroidEnabled");
+			std::string centroid_flag = yat4tango::PropertyHelper::get_memorized_attribute<std::string>(this, "drawCentroidEnabled");
+			//in order to avoid bug who convert empty string to 1 (#Jira: CPPAPIS-255)
+			if(centroid_flag =="")
+			{
+				Tango::Except::throw_exception(	"UNKNOWN_ERROR",
+												"drawCentroidEnabled Attribute Property __value is empty !",
+												"Rixs::init_device");
+			}
+			attr_drawCentroidEnabled_write = yat::StringUtil::to_num<Tango::DevBoolean>(centroid_flag);
+			drawCentroidEnabled.set_write_value(attr_drawCentroidEnabled_write);
+			write_drawCentroidEnabled(drawCentroidEnabled);
+
+			// write pngFilesEnabled At Init
+			INFO_STREAM << "Write tango hardware at Init - pngFilesEnabled." << endl;
+			Tango::WAttribute &pngFilesEnabled = dev_attr->get_w_attr_by_name("pngFilesEnabled");
+			std::string generate_flag = yat4tango::PropertyHelper::get_memorized_attribute<std::string>(this, "pngFilesEnabled");
+			//in order to avoid bug who convert empty string to 1 (#Jira: CPPAPIS-255)
+			if(generate_flag =="")
+			{
+				Tango::Except::throw_exception(	"UNKNOWN_ERROR",
+												"pngFilesEnabled Attribute Property __value is empty !",
+												"Rixs::init_device");
+			}
+			attr_pngFilesEnabled_write = yat::StringUtil::to_num<Tango::DevBoolean>(generate_flag);
+			pngFilesEnabled.set_write_value(attr_pngFilesEnabled_write);
+			write_pngFilesEnabled(pngFilesEnabled);
+
+
+			// write pngFilesPath At Init
+			INFO_STREAM << "Write tango hardware at Init - pngFilesPath." << endl;
+			Tango::WAttribute &pngFilesPath = dev_attr->get_w_attr_by_name("pngFilesPath");
+			std::string memorized_path = yat4tango::PropertyHelper::get_memorized_attribute<std::string>(this, "pngFilesPath");
+			pngFilesPath.set_write_value(memorized_path);
+			write_pngFilesPath(pngFilesPath);
+			}
+			catch(...)
+			{
+				//NOP
+			}
+
+            for (int i = 0; i < memorizedOperationTypes.size(); i++)
+            {
+                INFO_STREAM << "Write tango hardware at Init - operationType." << endl;
+                Tango::WAttribute &operationType = dev_attr->get_w_attr_by_name("operationType");
+                m_operation_type = memorizedOperationTypes.at(i);
+                strcpy(*attr_operationType_read, m_operation_type.c_str());
+                operationType.set_write_value(m_operation_type);
+                write_operationType(operationType);
+
+                // write operationValue At Init
+                INFO_STREAM << "Write tango hardware at Init - operationValue." << endl;
+                Tango::WAttribute &operationValue = dev_attr->get_w_attr_by_name("operationValue");
+                m_operation_value = memorizedOperationValues.at(i);
+                strcpy(*attr_operationValue_read, m_operation_value.c_str());
+                operationValue.set_write_value(m_operation_value);
+                write_operationValue(operationValue);
+
+                // AddOp()
+                INFO_STREAM << "Write tango hardware at Init - Add Operations to the processLib." << endl;
+                add_external_operation(memorizedOperationLevels.at(i));
+            }
+
+        }
+		catch(ProcessException& p)
+		{
+            INFO_STREAM << "Initialization Failed : " << p.getErrMsg() << endl;
+            m_status_message << "Initialization Failed : " << p.getErrMsg( ) << endl;
+            m_is_device_initialized = false;
+            set_state(Tango::FAULT);
+            return;
+		}
+        catch (Exception& e)
+        {
+            INFO_STREAM << "Initialization Failed : " << e.getErrMsg() << endl;
+            m_status_message << "Initialization Failed : " << e.getErrMsg( ) << endl;
+            m_is_device_initialized = false;
+            set_state(Tango::FAULT);
+            return;
+        }
+        catch (Tango::DevFailed& df)
+        {
+            ERROR_STREAM << df << endl;
+            INFO_STREAM << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+            m_status_message << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+            m_is_device_initialized = false;
+            set_state(Tango::FAULT);
+            return;
+        }
+    }
+
+    set_state(Tango::STANDBY);
+    dev_state();
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::init_device
 }
 
 //--------------------------------------------------------
@@ -177,10 +371,11 @@ void Rixs::init_device()
 void Rixs::get_device_property()
 {
 	/*----- PROTECTED REGION ID(Rixs::get_device_property_before) ENABLED START -----*/
-	
-	//	Initialize property data members
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::get_device_property_before
+
+    //	Initialize your default values here (if not done with  POGO).
+    //------------------------------------------------------------------
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::get_device_property_before
 
 
 	//	Read device properties from database.
@@ -286,10 +481,22 @@ void Rixs::get_device_property()
 	}
 
 	/*----- PROTECTED REGION ID(Rixs::get_device_property_after) ENABLED START -----*/
-	
-	//	Check device property data members init
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::get_device_property_after
+
+    std::vector<std::string> myVector;
+    myVector.push_back("NONE");
+    yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, myVector, "MemorizedOperationTypes");
+    myVector.clear();
+    myVector.push_back("0");
+    yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, myVector, "MemorizedOperationValues");
+    myVector.clear();
+    myVector.push_back("0");
+    yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, myVector, "MemorizedOperationLevels");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "True", "ResetSpectrumsAtEachFrame");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "False", "DefaultValueInSpectrumsIfEmpty");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "255;0;0", "RixsDrawCentroidColor");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "255;0;0", "RixsDrawClusterColor");
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::get_device_property_after
 }
 
 //--------------------------------------------------------
@@ -302,10 +509,38 @@ void Rixs::always_executed_hook()
 {
 	INFO_STREAM << "Rixs::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(Rixs::always_executed_hook) ENABLED START -----*/
-	
-	//	code always executed before all requests
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::always_executed_hook
+
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        if(!m_is_device_initialized)//nothing to do ! device need init
+            return;
+
+        //- get the singleton control objet used to pilot the lima framework
+        m_ct = ControlFactory::instance().get_control("Rixs");
+
+        dev_state();
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << e.getErrMsg() << endl;
+        m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+        //- throw exception
+        set_state(Tango::FAULT);
+        m_is_device_initialized = false;
+        return;
+    }
+    catch (Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        INFO_STREAM << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+        m_status_message << "Initialization Failed : " << std::string(df.errors[0].desc) << endl;
+        m_is_device_initialized = false;
+        set_state(Tango::FAULT);
+        return;
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::always_executed_hook
 }
 
 //--------------------------------------------------------
@@ -318,10 +553,12 @@ void Rixs::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
 	DEBUG_STREAM << "Rixs::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_attr_hardware) ENABLED START -----*/
-	
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_attr_hardware
+
+
+    //DEBUG_STREAM << "Rixs::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
+    //	Add your own code here
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -337,10 +574,25 @@ void Rixs::read_version(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_version(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_version) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_version_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_version
+
+	DEBUG_STREAM << "Rixs::read_version(Tango::Attribute &attr) entering... "<< endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	try
+	{
+		strcpy(*attr_version_read, CURRENT_VERSION);
+		attr.set_value(attr_version_read);
+	}
+	catch(Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		//- rethrow exception
+		Tango::Except::re_throw_exception(df,
+										"TANGO_DEVICE_ERROR",
+										string(df.errors[0].desc).c_str(),
+										"Rixs::read_version()");
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_version
 }
 //--------------------------------------------------------
 /**
@@ -355,10 +607,25 @@ void Rixs::read_operationType(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_operationType(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_operationType) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationType_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_operationType
+
+    DEBUG_STREAM << "Rixs::read_operationType(Tango::Attribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        attr.set_value(attr_operationType_read);
+    }
+    catch (Tango::DevFailed& df)
+    {
+
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          std::string(df.errors[0].desc).c_str(),
+                                          "Rixs::read_operationType");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_operationType
 }
 //--------------------------------------------------------
 /**
@@ -376,9 +643,43 @@ void Rixs::write_operationType(Tango::WAttribute &attr)
 	Tango::DevString	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Rixs::write_operationType) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::write_operationType
+
+    DEBUG_STREAM << "Rixs::write_operationType(Tango::WAttribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        m_operation_type = *attr_operationType_read; //memorize previous valid value
+        attr.get_write_value(attr_operationType_write);
+        std::string current = attr_operationType_write;
+        transform(current.begin(), current.end(), current.begin(), ::toupper);
+        if ((current != "RIXS") &&
+            (current != "NONE")
+            )
+        {
+            attr_operationType_write = const_cast<Tango::DevString>(m_operation_type.c_str());
+            Tango::Except::throw_exception("CONFIGURATION_ERROR",
+                                           "Possible operationType values are:"
+										   "\nRIXS"
+                                           "\nNONE",
+                                           "Rixs::write_operationType");
+        }
+
+        //- THIS IS AN AVAILABLE operationType
+        m_operation_type = current;
+        strcpy(*attr_operationType_read, current.c_str());
+    }
+    catch (Tango::DevFailed& df)
+    {
+
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          std::string(df.errors[0].desc).c_str(),
+                                          "Rixs::write_operationType");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::write_operationType
 }
 //--------------------------------------------------------
 /**
@@ -393,10 +694,25 @@ void Rixs::read_operationValue(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_operationValue(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_operationValue) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationValue_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_operationValue
+
+    DEBUG_STREAM << "Rixs::read_operationValue(Tango::Attribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        attr.set_value(attr_operationValue_read);
+    }
+    catch (Tango::DevFailed& df)
+    {
+
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          std::string(df.errors[0].desc).c_str(),
+                                          "Rixs::read_operationValue");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_operationValue
 }
 //--------------------------------------------------------
 /**
@@ -414,9 +730,33 @@ void Rixs::write_operationValue(Tango::WAttribute &attr)
 	Tango::DevString	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Rixs::write_operationValue) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::write_operationValue
+
+    DEBUG_STREAM << "Rixs::write_operationValue(Tango::WAttribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+        attr.get_write_value(attr_operationValue_write);
+        m_operation_value = attr_operationValue_write;
+        transform(m_operation_value.begin(), m_operation_value.end(), m_operation_value.begin(), ::toupper);
+        strcpy(*attr_operationValue_read, m_operation_value.c_str());
+		if(!m_rixs_tasks.empty())
+		{
+			double value = yat::XString<double>::to_num(m_operation_value);
+			m_rixs_tasks[0]->setOperationValue(value);
+		}
+    }
+    catch (Tango::DevFailed& df)
+    {
+
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          std::string(df.errors[0].desc).c_str(),
+                                          "Rixs::write_operationValue");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::write_operationValue
 }
 //--------------------------------------------------------
 /**
@@ -434,9 +774,16 @@ void Rixs::write_minAreaCluster(Tango::WAttribute &attr)
 	Tango::DevLong	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Rixs::write_minAreaCluster) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::write_minAreaCluster
+
+	DEBUG_STREAM << "Rixs::write_minAreaCluster(Tango::WAttribute &attr) entering... "<< endl;
+	attr.get_write_value(attr_minAreaCluster_write);
+	if(!m_rixs_tasks.empty())
+	{
+		m_rixs_tasks[0]->setRixsMinAreaCluster(attr_minAreaCluster_write);
+	}
+	yat4tango::PropertyHelper::set_memorized_attribute<Tango::DevLong>(this, "minAreaCluster", attr_minAreaCluster_write);
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::write_minAreaCluster
 }
 //--------------------------------------------------------
 /**
@@ -454,9 +801,16 @@ void Rixs::write_maxAreaCluster(Tango::WAttribute &attr)
 	Tango::DevLong	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Rixs::write_maxAreaCluster) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::write_maxAreaCluster
+
+	DEBUG_STREAM << "Rixs::write_maxAreaCluster(Tango::WAttribute &attr) entering... "<< endl;
+	attr.get_write_value(attr_maxAreaCluster_write);
+	if(!m_rixs_tasks.empty())
+	{
+		m_rixs_tasks[0]->setRixsMaxAreaCluster(attr_maxAreaCluster_write);
+	}
+	yat4tango::PropertyHelper::set_memorized_attribute<Tango::DevLong>(this, "maxAreaCluster", attr_maxAreaCluster_write);
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::write_maxAreaCluster
 }
 //--------------------------------------------------------
 /**
@@ -471,10 +825,15 @@ void Rixs::read_nbClusterValid(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_nbClusterValid(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_nbClusterValid) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_nbClusterValid_read);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_nbClusterValid
+
+	DEBUG_STREAM << "Rixs::read_nbClusterValid(Tango::Attribute &attr) entering... "<< endl;
+	if(!m_rixs_tasks.empty())
+	{
+		*attr_nbClusterValid_read = m_rixs_tasks[0]->get_nb_valid_cluster();
+		attr.set_value(attr_nbClusterValid_read);
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_nbClusterValid
 }
 //--------------------------------------------------------
 /**
@@ -492,9 +851,16 @@ void Rixs::write_drawClusterEnabled(Tango::WAttribute &attr)
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Rixs::write_drawClusterEnabled) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::write_drawClusterEnabled
+
+	DEBUG_STREAM << "Rixs::write_drawClusterEnabled(Tango::WAttribute &attr) entering... "<< endl;
+	attr.get_write_value(attr_drawClusterEnabled_write);
+	if(!m_rixs_tasks.empty())
+	{
+		m_rixs_tasks[0]->setRixsDrawClusterEnabled(attr_drawClusterEnabled_write);
+	}
+	yat4tango::PropertyHelper::set_memorized_attribute<Tango::DevULong>(this, "drawClusterEnabled", attr_drawClusterEnabled_write);
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::write_drawClusterEnabled
 }
 //--------------------------------------------------------
 /**
@@ -512,9 +878,16 @@ void Rixs::write_drawCentroidEnabled(Tango::WAttribute &attr)
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Rixs::write_drawCentroidEnabled) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::write_drawCentroidEnabled
+
+	DEBUG_STREAM << "Rixs::write_drawCentroidEnabled(Tango::WAttribute &attr) entering... "<< endl;
+	attr.get_write_value(attr_drawCentroidEnabled_write);
+	if(!m_rixs_tasks.empty())
+	{
+		m_rixs_tasks[0]->setRixsDrawCentroidEnabled(attr_drawCentroidEnabled_write);
+	}
+	yat4tango::PropertyHelper::set_memorized_attribute<Tango::DevULong>(this, "drawCentroidEnabled", (attr_drawCentroidEnabled_write?1:0));
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::write_drawCentroidEnabled
 }
 //--------------------------------------------------------
 /**
@@ -532,9 +905,16 @@ void Rixs::write_pngFilesEnabled(Tango::WAttribute &attr)
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Rixs::write_pngFilesEnabled) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::write_pngFilesEnabled
+
+	DEBUG_STREAM << "Rixs::write_pngFilesEnabled(Tango::WAttribute &attr) entering... "<< endl;
+	attr.get_write_value(attr_pngFilesEnabled_write);
+	if(!m_rixs_tasks.empty())
+	{
+		m_rixs_tasks[0]->setRixsWriteFilesEnabled(attr_pngFilesEnabled_write);
+	}
+	yat4tango::PropertyHelper::set_memorized_attribute<Tango::DevULong>(this, "pngFilesEnabled", (attr_pngFilesEnabled_write?1:0));
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::write_pngFilesEnabled
 }
 //--------------------------------------------------------
 /**
@@ -552,9 +932,17 @@ void Rixs::write_pngFilesPath(Tango::WAttribute &attr)
 	Tango::DevString	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(Rixs::write_pngFilesPath) ENABLED START -----*/
-	
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::write_pngFilesPath
+
+	DEBUG_STREAM << "Rixs::write_pngFilesPath(Tango::WAttribute &attr) entering... "<< endl;
+	attr.get_write_value(attr_pngFilesPath_write);
+	std::string file_path = attr_pngFilesPath_write;
+	if(!m_rixs_tasks.empty())
+	{
+		m_rixs_tasks[0]->setRixsWriteFilesPath(file_path);
+	}
+	yat4tango::PropertyHelper::set_memorized_attribute<std::string>(this, "pngFilesPath", file_path);
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::write_pngFilesPath
 }
 //--------------------------------------------------------
 /**
@@ -569,10 +957,30 @@ void Rixs::read_operationsList(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_operationsList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_operationsList) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_operationsList_read, 1024);
+
+    DEBUG_STREAM << "Rixs::read_operationsList(Tango::Attribute &attr) entering... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    Tango::DevString *ptr = new Tango::DevString[ 1024 ];
+
+    int item_idx = 0;
+	ptr[item_idx] = CORBA::string_dup("");
+    for (std::map<long, operationParams >::iterator itMap = m_map_operations.begin(); itMap != m_map_operations.end(); ++itMap)
+    {
+		if(itMap->second.operationType != "NONE")
+		{
+			std::stringstream item("");
+			item << "runLevel = " << itMap->first
+			<< " : "
+			<< "Operation = " << itMap->second.operationType
+			<< " ( "<< itMap->second.operationValue<<" )";
+			ptr[item_idx] = CORBA::string_dup((item.str()).c_str());
+			item_idx++;
+		}
+    }
 	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_operationsList
+    attr.set_value(ptr, item_idx, 0, true);
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_operationsList
 }
 //--------------------------------------------------------
 /**
@@ -587,10 +995,16 @@ void Rixs::read_clusterCounter(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_clusterCounter(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_clusterCounter) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_clusterCounter_read, 100000);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterCounter
+
+	DEBUG_STREAM << "Rixs::read_clusterCounter(Tango::Attribute &attr) entering... "<< endl;
+	if(!m_rixs_tasks.empty())
+	{
+		auto const &src = m_rixs_tasks[0]->get_cluster_counter();
+        std::vector<Tango::DevLong64> tmp(src.begin(), src.end());
+        attr.set_value(tmp.data(), tmp.size());
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterCounter
 }
 //--------------------------------------------------------
 /**
@@ -605,10 +1019,16 @@ void Rixs::read_clusterArea(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_clusterArea(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_clusterArea) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_clusterArea_read, 1000000);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterArea
+
+	DEBUG_STREAM << "Rixs::read_clusterArea(Tango::Attribute &attr) entering... "<< endl;
+	if(!m_rixs_tasks.empty())
+	{
+        auto const &src = m_rixs_tasks[0]->get_cluster_area();
+        std::vector<Tango::DevLong64> tmp(src.begin(), src.end());
+        attr.set_value(tmp.data(), tmp.size());
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterArea
 }
 //--------------------------------------------------------
 /**
@@ -623,10 +1043,16 @@ void Rixs::read_clusterSum(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_clusterSum(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_clusterSum) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_clusterSum_read, 1000000);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterSum
+
+	DEBUG_STREAM << "Rixs::read_clusterSum(Tango::Attribute &attr) entering... "<< endl;
+	if(!m_rixs_tasks.empty())
+	{
+		auto const &src = m_rixs_tasks[0]->get_cluster_sum();
+        std::vector<Tango::DevLong64> tmp(src.begin(), src.end());
+        attr.set_value(tmp.data(), tmp.size());
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterSum
 }
 //--------------------------------------------------------
 /**
@@ -641,10 +1067,14 @@ void Rixs::read_clusterCentroidX(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_clusterCentroidX(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_clusterCentroidX) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_clusterCentroidX_read, 1000000);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterCentroidX
+
+	DEBUG_STREAM << "Rixs::read_clusterCentroidX(Tango::Attribute &attr) entering... "<< endl;
+	if(!m_rixs_tasks.empty())
+	{
+		attr.set_value(const_cast<Tango::DevDouble*> (&(m_rixs_tasks[0]->get_centroid_x().at(0))), m_rixs_tasks[0]->get_centroid_x().size());
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterCentroidX
 }
 //--------------------------------------------------------
 /**
@@ -659,10 +1089,14 @@ void Rixs::read_clusterCentroidY(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "Rixs::read_clusterCentroidY(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(Rixs::read_clusterCentroidY) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_clusterCentroidY_read, 1000000);
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterCentroidY
+
+	DEBUG_STREAM << "Rixs::read_clusterCentroidY(Tango::Attribute &attr) entering... "<< endl;
+	if(!m_rixs_tasks.empty())
+	{
+		attr.set_value(const_cast<Tango::DevDouble*> (&m_rixs_tasks[0]->get_centroid_y().at(0)), m_rixs_tasks[0]->get_centroid_y().size());
+	}
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::read_clusterCentroidY
 }
 
 //--------------------------------------------------------
@@ -695,10 +1129,26 @@ void Rixs::add_operation(Tango::DevLong argin)
 {
 	DEBUG_STREAM << "Rixs::AddOperation()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(Rixs::add_operation) ENABLED START -----*/
-	
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::add_operation
+
+    INFO_STREAM << "Rixs::add_operation(): entering... !" << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    //	Add your own code to control device here
+    try
+    {
+        add_external_operation(argin);
+        memorize_all_operations();
+    }
+    catch (Exception& e)
+    {
+
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "Rixs::add_operation");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::add_operation
 }
 //--------------------------------------------------------
 /**
@@ -712,15 +1162,210 @@ void Rixs::remove_operation(Tango::DevLong argin)
 {
 	DEBUG_STREAM << "Rixs::RemoveOperation()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(Rixs::remove_operation) ENABLED START -----*/
-	
-	//	Add your own code
-	
-	/*----- PROTECTED REGION END -----*/	//	Rixs::remove_operation
+
+    INFO_STREAM << "Rixs::remove_operation(): entering... !" << endl;
+
+    //	Add your own code to control device here
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    try
+    {
+		std::map<long, operationParams >::iterator it;
+		it = m_map_operations.find (argin);
+		if (it != m_map_operations.end())
+		{
+			delete_external_operation(argin);
+			memorize_all_operations();
+		}
+    }
+    catch (Exception& e)
+    {
+
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "Rixs::remove_operation");
+    }
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::remove_operation
 }
 
 /*----- PROTECTED REGION ID(Rixs::namespace_ending) ENABLED START -----*/
+void Rixs::read_minAreaCluster(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "Rixs::read_minAreaCluster(Tango::Attribute &attr) entering... "<< endl;
+}
 
-//	Additional Methods
+void Rixs::read_maxAreaCluster(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "Rixs::read_maxAreaCluster(Tango::Attribute &attr) entering... "<< endl;
+}
+
+void Rixs::read_drawClusterEnabled(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "Rixs::read_drawClusterEnabled(Tango::Attribute &attr) entering... "<< endl;
+}
+
+void Rixs::read_drawCentroidEnabled(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "Rixs::read_drawCentroidEnabled(Tango::Attribute &attr) entering... "<< endl;
+}
+
+void Rixs::read_pngFilesEnabled(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "Rixs::read_pngFilesEnabled(Tango::Attribute &attr) entering... "<< endl;
+}
+
+void Rixs::read_pngFilesPath(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "Rixs::read_pngFilesPath(Tango::Attribute &attr) entering... "<< endl;
+}
+
+void Rixs::delete_external_operation(long level)
+{
+    DEBUG_STREAM << "Rixs::delete_external_operation() entering ... " << endl;
+    //free old operation
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    if (m_ct != 0)
+    {
+        try
+        {
+			std::stringstream opId("");
+			opId << m_map_operations[level].opId;
+			INFO_STREAM << "\t- delOp [" << opId.str() << "]"<<endl;
+			m_ct->externalOperation()->delOp(opId.str());
+			m_map_operations.erase(level);
+        }
+        catch (Exception& e)
+        {
+
+            ERROR_STREAM << e.getErrMsg() << endl;
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           e.getErrMsg().c_str(),
+                                           "Rixs::delete_external_operation");
+        }
+    }
+}
+
+void Rixs::add_external_operation(long level)
+{
+    DEBUG_STREAM << "Rixs::add_external_operation() entering ... " << endl;
+    //add a new operation
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+	transform(m_operation_type.begin(), m_operation_type.end(), m_operation_type.begin(), ::toupper);
+    if (m_ct != 0)
+    {
+        try
+        {
+            if (m_operation_type == "RIXS")
+            {
+                //create new operation
+                std::stringstream opId("");
+                SoftOpInstance op;
+				opId << level<<":"<<m_operation_type;//<<" ("<<m_operation_value<<")";
+				INFO_STREAM << "\t- addOp [" << opId.str() << "]"<<endl;
+				operationParams params = {opId.str(), attr_operationType_write, attr_operationValue_write};
+				m_map_operations[level] = params;
+                m_ct->externalOperation()->addOp(USER_LINK_TASK, opId.str(), level, op);
+
+				//prepare l'externalOperation Task
+				RixsTask* task = new RixsTask("NONE", 0);
+                task->setOperationType(attr_operationType_write);
+                task->setOperationValue(yat::XString<double>::to_num(m_operation_value));
+				task->setResetSpectrumsAtEachFrameEnabled(resetSpectrumsAtEachFrame);
+				task->setDefaultValueInSpectrumsIfEmptyEnabled(defaultValueInSpectrumsIfEmpty);
+				task->setRixsDrawCentroidColor(rixsDrawCentroidColor);
+				task->setRixsDrawClusterColor(rixsDrawClusterColor);
+				task->setRixsDrawClusterEnabled(attr_drawClusterEnabled_write);
+				task->setRixsDrawCentroidEnabled(attr_drawCentroidEnabled_write);
+				task->setRixsMinAreaCluster(attr_minAreaCluster_write);
+				task->setRixsMaxAreaCluster(attr_maxAreaCluster_write);
+				task->setRixsWriteFilesEnabled(attr_pngFilesEnabled_write);
+				task->setRixsWriteFilesPath(attr_pngFilesPath_write);
+				m_rixs_tasks.push_back(task);
+                (reinterpret_cast<SoftUserLinkTask*> (op.m_opt))->setLinkTask(task);
+                return;
+            }
+
+            //NOP : if(m_operation_type == "NONE")
+        }
+        catch (Exception& e)
+        {
+            ERROR_STREAM << e.getErrMsg() << endl;
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           e.getErrMsg().c_str(),
+                                           "Rixs::add_external_operation");
+        }
+        catch (yat::Exception& ex)
+        {
+            //throw_devfailed( ex );
+            ex.dump();
+            std::stringstream errMsg("");
+            for (unsigned i = 0; i < ex.errors.size(); i++)
+            {
+                errMsg << ex.errors[i].desc << endl;
+            }
+
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           errMsg.str().c_str(),
+                                           "Rixs::add_external_operation");
+        }
+    }
+}
+
+void Rixs::memorize_all_operations(void)
+{
+    DEBUG_STREAM << "Rixs::memorize_all_operations() entering ... " << endl;
+	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    //Memorize operations
+
+    std::vector<long> vecOpLevel;
+    std::vector<std::string> vecOpType;
+    std::vector<std::string> vecOpValue;
+    for (std::map<long, operationParams >::iterator itMap = m_map_operations.begin(); itMap != m_map_operations.end(); ++itMap)
+    {
+
+        vecOpLevel.push_back(itMap->first);
+        vecOpType.push_back(itMap->second.operationType);
+        vecOpValue.push_back(itMap->second.operationValue);
+    }
+
+    yat4tango::PropertyHelper::set_property(this, "MemorizedOperationLevels", vecOpLevel);
+    yat4tango::PropertyHelper::set_property(this, "MemorizedOperationTypes", vecOpType);
+    yat4tango::PropertyHelper::set_property(this, "MemorizedOperationValues", vecOpValue);
+}
+
+Tango::DevState Rixs::dev_state()
+{
+    Tango::DevState argout = DeviceImpl::dev_state();
+    DEBUG_STREAM << "Rixs::dev_state(): entering... !" << endl;
+    //    Add your own code to control device here
+    yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+    stringstream DeviceStatus;
+    DeviceStatus << "";
+    Tango::DevState DeviceState = Tango::STANDBY;
+    if (!m_is_device_initialized)
+    {
+        INFO_STREAM << "m_status_message = " << m_status_message.str() << endl;
+        DeviceState = Tango::FAULT;
+        DeviceStatus << m_status_message.str();
+    }
+    else
+    {
+        // state & status are retrieved from Factory, Factory is updated by Generic device
+        DeviceState = ControlFactory::instance().get_state();
+        DeviceStatus << ControlFactory::instance().get_status();
+    }
+
+    set_state(DeviceState);
+    set_status(DeviceStatus.str());
+
+    argout = DeviceState;
+    return argout;
+}
 
 /*----- PROTECTED REGION END -----*/	//	Rixs::namespace_ending
 } //	namespace
