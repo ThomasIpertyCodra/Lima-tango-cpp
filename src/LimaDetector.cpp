@@ -5019,7 +5019,7 @@ void LimaDetector::add_image_dynamic_attribute(const std::string& attr_name)
     dai.rcb = yat4tango::DynamicAttributeReadCallback::instanciate(*this, &LimaDetector::read_image_callback);
 
     //- add the dyn. attr. to the device
-    m_dim.dynamic_attributes_manager().add_attribute(dai);
+    m_dim->dynamic_attributes_manager().add_attribute(dai);
 }
 
 //+----------------------------------------------------------------------------
