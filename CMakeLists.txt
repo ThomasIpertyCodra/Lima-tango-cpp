@@ -120,7 +120,7 @@ endif()
 # --------------------------------------------------------------------------
 
 foreach(source_list sources EXTRA_SOURCES)
-    list(FILTER ${source_list} EXCLUDE
+    list(FILTER ${source_list} EXCLUDE REGEX
         "/specifics/(Layout|Mask|RoiCounters|Rixs|FitGaussian)/(old_src/|main\\.cpp$|ClassFactory\\.cpp$)"
     )
 endforeach()
