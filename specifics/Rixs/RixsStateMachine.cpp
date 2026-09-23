@@ -72,17 +72,12 @@ bool Rixs::is_version_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::versionStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::versionStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::versionStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -100,26 +95,13 @@ bool Rixs::is_operationType_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for operationType attribute in Write access.
 	/*----- PROTECTED REGION ID(Rixs::operationTypeStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::operationTypeStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Rixs::operationTypeStateAllowed_WRITE
 
 	//	Check access type.
 	if ( type==Tango::READ_REQ )
@@ -130,17 +112,12 @@ bool Rixs::is_operationType_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::operationTypeStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::operationTypeStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::operationTypeStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -158,26 +135,13 @@ bool Rixs::is_operationValue_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for operationValue attribute in Write access.
 	/*----- PROTECTED REGION ID(Rixs::operationValueStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::operationValueStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Rixs::operationValueStateAllowed_WRITE
 
 	//	Check access type.
 	if ( type==Tango::READ_REQ )
@@ -188,17 +152,12 @@ bool Rixs::is_operationValue_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::operationValueStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::operationValueStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::operationValueStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -216,26 +175,13 @@ bool Rixs::is_minAreaCluster_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for minAreaCluster attribute in Write access.
 	/*----- PROTECTED REGION ID(Rixs::minAreaClusterStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::minAreaClusterStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Rixs::minAreaClusterStateAllowed_WRITE
 
 	return true;
 }
@@ -250,26 +196,13 @@ bool Rixs::is_maxAreaCluster_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for maxAreaCluster attribute in Write access.
 	/*----- PROTECTED REGION ID(Rixs::maxAreaClusterStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::maxAreaClusterStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Rixs::maxAreaClusterStateAllowed_WRITE
 
 	return true;
 }
@@ -292,17 +225,12 @@ bool Rixs::is_nbClusterValid_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::nbClusterValidStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::nbClusterValidStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::nbClusterValidStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -320,26 +248,13 @@ bool Rixs::is_drawClusterEnabled_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for drawClusterEnabled attribute in Write access.
 	/*----- PROTECTED REGION ID(Rixs::drawClusterEnabledStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::drawClusterEnabledStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Rixs::drawClusterEnabledStateAllowed_WRITE
 
 	return true;
 }
@@ -354,26 +269,13 @@ bool Rixs::is_drawCentroidEnabled_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for drawCentroidEnabled attribute in Write access.
 	/*----- PROTECTED REGION ID(Rixs::drawCentroidEnabledStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::drawCentroidEnabledStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Rixs::drawCentroidEnabledStateAllowed_WRITE
 
 	return true;
 }
@@ -388,26 +290,13 @@ bool Rixs::is_pngFilesEnabled_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for pngFilesEnabled attribute in Write access.
 	/*----- PROTECTED REGION ID(Rixs::pngFilesEnabledStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::pngFilesEnabledStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Rixs::pngFilesEnabledStateAllowed_WRITE
 
 	return true;
 }
@@ -422,26 +311,13 @@ bool Rixs::is_pngFilesPath_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for pngFilesPath attribute in Write access.
 	/*----- PROTECTED REGION ID(Rixs::pngFilesPathStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::pngFilesPathStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Rixs::pngFilesPathStateAllowed_WRITE
 
 	return true;
 }
@@ -464,17 +340,12 @@ bool Rixs::is_operationsList_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::operationsListStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::operationsListStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::operationsListStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -500,17 +371,12 @@ bool Rixs::is_clusterCounter_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::clusterCounterStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::clusterCounterStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::clusterCounterStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -536,17 +402,12 @@ bool Rixs::is_clusterArea_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::clusterAreaStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::clusterAreaStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::clusterAreaStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -572,17 +433,12 @@ bool Rixs::is_clusterSum_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::clusterSumStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::clusterSumStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::clusterSumStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -608,17 +464,12 @@ bool Rixs::is_clusterCentroidX_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::clusterCentroidXStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::clusterCentroidXStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::clusterCentroidXStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -644,17 +495,12 @@ bool Rixs::is_clusterCentroidY_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Rixs::clusterCentroidYStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::clusterCentroidYStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Rixs::clusterCentroidYStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -681,8 +527,7 @@ bool Rixs::is_AddOperation_allowed(TANGO_UNUSED(const CORBA::Any &any))
 	{
 	/*----- PROTECTED REGION ID(Rixs::AddOperationStateAllowed) ENABLED START -----*/
 
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::AddOperationStateAllowed
+	/*----- PROTECTED REGION END -----*/	//	Rixs::AddOperationStateAllowed
 		return false;
 	}
 	return true;
@@ -703,8 +548,7 @@ bool Rixs::is_RemoveOperation_allowed(TANGO_UNUSED(const CORBA::Any &any))
 	{
 	/*----- PROTECTED REGION ID(Rixs::RemoveOperationStateAllowed) ENABLED START -----*/
 
-
-/*----- PROTECTED REGION END -----*/	//	Rixs::RemoveOperationStateAllowed
+	/*----- PROTECTED REGION END -----*/	//	Rixs::RemoveOperationStateAllowed
 		return false;
 	}
 	return true;

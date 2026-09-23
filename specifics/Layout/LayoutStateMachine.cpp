@@ -66,8 +66,7 @@ bool Layout::is_version_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	//	Not any excluded states for version attribute in read access.
 	/*----- PROTECTED REGION ID(Layout::versionStateAllowed_READ) ENABLED START -----*/
 
-
-/*----- PROTECTED REGION END -----*/	//	Layout::versionStateAllowed_READ
+	/*----- PROTECTED REGION END -----*/	//	Layout::versionStateAllowed_READ
 	return true;
 }
 
@@ -81,26 +80,13 @@ bool Layout::is_operationType_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for operationType attribute in Write access.
 	/*----- PROTECTED REGION ID(Layout::operationTypeStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Layout::operationTypeStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Layout::operationTypeStateAllowed_WRITE
 
 	//	Check access type.
 	if ( type==Tango::READ_REQ )
@@ -111,17 +97,12 @@ bool Layout::is_operationType_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Layout::operationTypeStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Layout::operationTypeStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Layout::operationTypeStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -139,26 +120,13 @@ bool Layout::is_operationValue_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for operationValue attribute in Write access.
 	/*----- PROTECTED REGION ID(Layout::operationValueStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
-		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
 	{
-		//	End of Generated Code
-		if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	Layout::operationValueStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	Layout::operationValueStateAllowed_WRITE
 
 	//	Check access type.
 	if ( type==Tango::READ_REQ )
@@ -169,17 +137,12 @@ bool Layout::is_operationValue_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Layout::operationValueStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Layout::operationValueStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Layout::operationValueStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -205,17 +168,12 @@ bool Layout::is_operationsList_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Layout::operationsListStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	Layout::operationsListStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Layout::operationsListStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -242,8 +200,7 @@ bool Layout::is_AddOperation_allowed(TANGO_UNUSED(const CORBA::Any &any))
 	{
 	/*----- PROTECTED REGION ID(Layout::AddOperationStateAllowed) ENABLED START -----*/
 
-
-/*----- PROTECTED REGION END -----*/	//	Layout::AddOperationStateAllowed
+	/*----- PROTECTED REGION END -----*/	//	Layout::AddOperationStateAllowed
 		return false;
 	}
 	return true;
@@ -264,8 +221,7 @@ bool Layout::is_RemoveOperation_allowed(TANGO_UNUSED(const CORBA::Any &any))
 	{
 	/*----- PROTECTED REGION ID(Layout::RemoveOperationStateAllowed) ENABLED START -----*/
 
-
-/*----- PROTECTED REGION END -----*/	//	Layout::RemoveOperationStateAllowed
+	/*----- PROTECTED REGION END -----*/	//	Layout::RemoveOperationStateAllowed
 		return false;
 	}
 	return true;

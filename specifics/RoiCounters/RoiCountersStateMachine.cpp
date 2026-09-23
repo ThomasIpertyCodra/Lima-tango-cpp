@@ -66,8 +66,7 @@ bool RoiCounters::is_version_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	//	Not any excluded states for version attribute in read access.
 	/*----- PROTECTED REGION ID(RoiCounters::versionStateAllowed_READ) ENABLED START -----*/
 
-
-/*----- PROTECTED REGION END -----*/	//	RoiCounters::versionStateAllowed_READ
+	/*----- PROTECTED REGION END -----*/	//	RoiCounters::versionStateAllowed_READ
 	return true;
 }
 
@@ -81,18 +80,14 @@ bool RoiCounters::is_runLevel_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for runLevel attribute in Write access.
 	/*----- PROTECTED REGION ID(RoiCounters::runLevelStateAllowed_WRITE) ENABLED START -----*/
-
-	if (get_state() == Tango::INIT	||
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT ||
 		get_state() == Tango::FAULT	||
-		get_state() == Tango::RUNNING)
+		get_state() == Tango::RUNNING))
 	{
-		//	End of Generated Code
-
-		//	Re-Start of Generated Code
 		return false;
 	}
-
-/*----- PROTECTED REGION END -----*/	//	RoiCounters::runLevelStateAllowed_WRITE
+	/*----- PROTECTED REGION END -----*/	//	RoiCounters::runLevelStateAllowed_WRITE
 
 	return true;
 }
@@ -115,17 +110,12 @@ bool RoiCounters::is_operationsList_allowed(TANGO_UNUSED(Tango::AttReqType type)
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(RoiCounters::operationsListStateAllowed_READ) ENABLED START -----*/
-if ( get_state()==Tango::RUNNING && type==Tango::READ_REQ )
-		{
-           return true;
-		}
-		
-		if ( get_state()==Tango::FAULT && is_device_initialized() )
-		{
-           return true;
-		}
-
-/*----- PROTECTED REGION END -----*/	//	RoiCounters::operationsListStateAllowed_READ
+			if (get_state() == Tango::RUNNING ||
+			(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	RoiCounters::operationsListStateAllowed_READ
 			return false;
 		}
 		return true;
