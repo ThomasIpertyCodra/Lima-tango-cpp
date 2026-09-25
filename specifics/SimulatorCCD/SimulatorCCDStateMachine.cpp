@@ -64,7 +64,11 @@ bool SimulatorCCD::is_growFactor_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for growFactor attribute in Write access.
 	/*----- PROTECTED REGION ID(SimulatorCCD::growFactorStateAllowed_WRITE) ENABLED START -----*/
-	
+	if (type == Tango::WRITE_REQ && get_state() == Tango::FAULT &&
+		!is_device_initialized())
+	{
+		return false;
+	}
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::growFactorStateAllowed_WRITE
 
 	//	Check access type.
@@ -74,7 +78,10 @@ bool SimulatorCCD::is_growFactor_allowed(TANGO_UNUSED(Tango::AttReqType type))
 		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(SimulatorCCD::growFactorStateAllowed_READ) ENABLED START -----*/
-		
+			if (is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::growFactorStateAllowed_READ
 			return false;
 		}
@@ -93,7 +100,12 @@ bool SimulatorCCD::is_fillType_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 	//	Not any excluded states for fillType attribute in Write access.
 	/*----- PROTECTED REGION ID(SimulatorCCD::fillTypeStateAllowed_WRITE) ENABLED START -----*/
-	
+	if (type == Tango::WRITE_REQ &&
+		(get_state() == Tango::INIT || get_state() == Tango::RUNNING ||
+		(get_state() == Tango::FAULT && !is_device_initialized())))
+	{
+		return false;
+	}
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::fillTypeStateAllowed_WRITE
 
 	//	Check access type.
@@ -105,7 +117,11 @@ bool SimulatorCCD::is_fillType_allowed(TANGO_UNUSED(Tango::AttReqType type))
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(SimulatorCCD::fillTypeStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state() == Tango::RUNNING ||
+				(get_state() == Tango::FAULT && is_device_initialized()))
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::fillTypeStateAllowed_READ
 			return false;
 		}

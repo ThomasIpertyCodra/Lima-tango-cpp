@@ -612,7 +612,7 @@ void SimulatorCCDClass::create_static_attribute_list(vector<Tango::Attr *> &att_
 	cout2 << defaultAttList.size() << " attributes in default list" << endl;
 
 	/*----- PROTECTED REGION ID(SimulatorCCDClass::create_static_att_list) ENABLED START -----*/
-	
+	defaultAttList.push_back("log");
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCDClass::create_static_att_list
 }
 

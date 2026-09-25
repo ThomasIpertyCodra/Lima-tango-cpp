@@ -39,6 +39,19 @@
 #define SimulatorCCD_H
 
 #include <tango.h>
+#include "Factory.h"
+#include <yat4tango/PropertyHelper.h>
+#include <yat4tango/InnerAppender.h>
+#include "lima/HwInterface.h"
+#include "lima/CtControl.h"
+#include "lima/CtAcquisition.h"
+#include "lima/CtImage.h"
+#include <SimulatorInterface.h>
+#include <SimulatorFrameBuilder.h>
+
+#define MAX_ATTRIBUTE_STRING_LENGTH 256
+#define STR_GAUSS "GAUSS"
+#define STR_DIFFRACTION "DIFFRACTION"
 
 
 /*----- PROTECTED REGION END -----*/	//	SimulatorCCD.h
@@ -61,7 +74,17 @@ class SimulatorCCD : public Tango::Device_4Impl
 
 /*----- PROTECTED REGION ID(SimulatorCCD::Data Members) ENABLED START -----*/
 
-//	Add your own data members
+protected:
+	Tango::DevDouble attr_growFactor_write;
+	Tango::DevString attr_fillType_write;
+	Tango::DevDouble attr_xOffset_write;
+	Tango::DevDouble attr_yOffset_write;
+	bool m_is_device_initialized;
+	std::stringstream m_status_message;
+	std::string m_fillType;
+	lima::Simulator::Interface* m_hw;
+	lima::CtControl* m_ct;
+	lima::Simulator::Camera* m_camera;
 
 /*----- PROTECTED REGION END -----*/	//	SimulatorCCD::Data Members
 
@@ -197,7 +220,8 @@ public:
 
 /*----- PROTECTED REGION ID(SimulatorCCD::Additional Method prototypes) ENABLED START -----*/
 
-//	Additional Method prototypes
+	virtual Tango::DevState dev_state();
+	bool is_device_initialized() { return m_is_device_initialized; }
 
 /*----- PROTECTED REGION END -----*/	//	SimulatorCCD::Additional Method prototypes
 };

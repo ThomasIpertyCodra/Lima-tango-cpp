@@ -40,6 +40,8 @@ static const char *RcsId = "$Id:  $";
 //=============================================================================
 
 
+#include <tango.h>
+#include <PogoHelper.h>
 #include <SimulatorCCD.h>
 #include <SimulatorCCDClass.h>
 
@@ -121,9 +123,13 @@ void SimulatorCCD::delete_device()
 {
 	DEBUG_STREAM << "SimulatorCCD::delete_device() " << device_name << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::delete_device) ENABLED START -----*/
-	
-	//	Delete device allocated objects
-	
+    INFO_STREAM << "SimulatorCCD::SimulatorCCD() delete device " << device_name << endl;
+    //    Delete device allocated objects
+    DELETE_SCALAR_ATTRIBUTE(attr_growFactor_read);
+    DELETE_DEVSTRING_ATTRIBUTE(attr_fillType_read);
+
+	INFO_STREAM << "Remove the inner-appender." << endl;
+	yat4tango::InnerAppender::release(this);
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::delete_device
 }
 
@@ -137,9 +143,11 @@ void SimulatorCCD::init_device()
 {
 	DEBUG_STREAM << "SimulatorCCD::init_device() create device " << device_name << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::init_device_before) ENABLED START -----*/
-	
-	//	Initialization before get_device_property() call
-	
+    INFO_STREAM << "SimulatorCCD::SimulatorCCD() create device " << device_name << endl;
+
+    // Initialise variables to default values
+    //--------------------------------------------
+
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::init_device_before
 	
 
@@ -148,9 +156,67 @@ void SimulatorCCD::init_device()
 	
 
 	/*----- PROTECTED REGION ID(SimulatorCCD::init_device) ENABLED START -----*/
-	
-	//	Initialize device
-	
+    CREATE_SCALAR_ATTRIBUTE(attr_growFactor_read);
+    CREATE_DEVSTRING_ATTRIBUTE(attr_fillType_read,  MAX_ATTRIBUTE_STRING_LENGTH);
+
+    //By default INIT, need to ensure that all objets are OK before set the device to STANDBY
+    set_state(Tango::INIT);
+    m_is_device_initialized = false;
+    m_status_message.str("");
+
+	//- instanciate the appender in order to manage logs
+	INFO_STREAM << "Create the inner-appender in order to manage logs." << endl;
+	yat4tango::InnerAppender::initialize(this, 512);
+
+
+    try
+    {
+        //- get the main object used to pilot the lima framework
+        //in fact LimaDetector is create the singleton control objet
+        //so this call, will only return existing object, no need to give it the ip !!
+        m_ct = ControlFactory::instance().get_control("SimulatorCCD");
+
+        //- get interface to specific camera
+        m_hw = dynamic_cast<Simulator::Interface*> (m_ct->hwInterface());
+
+        //- get camera to specific detector
+        m_camera = &(m_hw->getCamera());
+
+		// write fillType At Init
+		INFO_STREAM << "Write tango hardware at Init - fillType." << endl;
+        Tango::WAttribute &fillType = dev_attr->get_w_attr_by_name("fillType");
+        m_fillType = memorizedFillType;
+        strcpy(*attr_fillType_read, memorizedFillType.c_str());
+        fillType.set_write_value(memorizedFillType);
+        write_fillType(fillType);
+
+		// write growFactor At Init
+		INFO_STREAM << "Write tango hardware at Init - growFactor." << endl;
+        Tango::WAttribute &growFactor = dev_attr->get_w_attr_by_name("growFactor");
+        *attr_growFactor_read = attr_growFactor_write = memorizedGrowFactor;
+        growFactor.set_write_value(memorizedGrowFactor);
+        write_growFactor(growFactor);
+
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << "Initialization Failed : " << e.getErrMsg() << endl;
+        m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+        m_is_device_initialized = false;
+        set_state(Tango::FAULT);
+        return;
+    }
+    catch (...)
+    {
+        ERROR_STREAM << "Initialization Failed : UNKNOWN" << endl;
+        m_status_message << "Initialization Failed : UNKNOWN" << endl;
+        set_state(Tango::FAULT);
+        m_is_device_initialized = false;
+        return;
+    }
+    m_is_device_initialized = true;
+    set_state(Tango::STANDBY);
+    dev_state();
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::init_device
 }
 
@@ -163,9 +229,10 @@ void SimulatorCCD::init_device()
 void SimulatorCCD::get_device_property()
 {
 	/*----- PROTECTED REGION ID(SimulatorCCD::get_device_property_before) ENABLED START -----*/
-	
-	//	Initialize property data members
-	
+    //	Initialize your default values here (if not done with  POGO).
+    //------------------------------------------------------------------
+
+
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::get_device_property_before
 
 
@@ -212,9 +279,8 @@ void SimulatorCCD::get_device_property()
 	}
 
 	/*----- PROTECTED REGION ID(SimulatorCCD::get_device_property_after) ENABLED START -----*/
-	
-	//	Check device property data members init
-	
+    yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "GAUSS", "MemorizedFillType");
+	yat4tango::PropertyHelper::create_property_if_empty(this, dev_prop, "1.0", "MemorizedGrowFactor");
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::get_device_property_after
 }
 
@@ -228,9 +294,41 @@ void SimulatorCCD::always_executed_hook()
 {
 	INFO_STREAM << "SimulatorCCD::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::always_executed_hook) ENABLED START -----*/
-	
-	//	code always executed before all requests
-	
+    DEBUG_STREAM << "SimulatorCCD::always_executed_hook() entering... " << endl;
+
+	try
+	{
+		yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
+		m_status_message.str("");
+		//- get the singleton control objet used to pilot the lima framework
+        m_ct = ControlFactory::instance().get_control("SimulatorCCD");
+
+        //- get interface to specific camera
+        m_hw = dynamic_cast<Simulator::Interface*> (m_ct->hwInterface());
+
+        //- get camera to specific detector
+        m_camera = &(m_hw->getCamera());
+
+		dev_state();
+
+	}
+	catch (Exception& e)
+	{
+		ERROR_STREAM << e.getErrMsg() << endl;
+		m_status_message << "Initialization Failed : " << e.getErrMsg() << endl;
+		//- throw exception
+		set_state(Tango::FAULT);
+		m_is_device_initialized = false;
+		return;
+	}
+	catch (Tango::DevFailed& df)
+	{
+		ERROR_STREAM << df << endl;
+		m_status_message << "Initialization Failed : " << string(df.errors[0].desc) << endl;
+		m_is_device_initialized = false;
+		set_state(Tango::FAULT);
+		return;
+	}
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::always_executed_hook
 }
 
@@ -244,9 +342,8 @@ void SimulatorCCD::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
 	DEBUG_STREAM << "SimulatorCCD::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::read_attr_hardware) ENABLED START -----*/
-	
-	//	Add your own code
-	
+    DEBUG_STREAM << "SimulatorCCD::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
+    //    Add your own code here
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::read_attr_hardware
 }
 
@@ -263,9 +360,35 @@ void SimulatorCCD::read_growFactor(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "SimulatorCCD::read_growFactor(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::read_growFactor) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_growFactor_read);
-	
+    DEBUG_STREAM << "SimulatorCCD::read_growFactor(Tango::Attribute &attr) entering... " << endl;
+    assert(NULL != m_ct);
+    if (NULL != m_ct)
+    {
+        try
+        {
+            double growFactor;
+            m_camera->getFrameBuilder()->getGrowFactor(growFactor);
+            *attr_growFactor_read = Tango::DevDouble(growFactor);
+            attr.set_value(attr_growFactor_read);
+        }
+        catch (Tango::DevFailed& df)
+        {
+            ERROR_STREAM << df << endl;
+            //- rethrow exception
+            Tango::Except::re_throw_exception(df,
+                                              "TANGO_DEVICE_ERROR",
+                                              string(df.errors[0].desc).c_str(),
+                                              "SimulatorCCD::read_growFactor");
+        }
+        catch (lima::Exception& e)
+        {
+            ERROR_STREAM << e.getErrMsg() << endl;
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           e.getErrMsg().c_str(),
+                                           "SimulatorCCD::read_growFactor");
+        }
+    }
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::read_growFactor
 }
 //--------------------------------------------------------
@@ -284,8 +407,35 @@ void SimulatorCCD::write_growFactor(Tango::WAttribute &attr)
 	Tango::DevDouble	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(SimulatorCCD::write_growFactor) ENABLED START -----*/
-	
-	
+    DEBUG_STREAM << "SimulatorCCD::write_growFactor(Tango::WAttribute &attr) entering... " << endl;
+
+    assert(NULL != m_ct);
+    if (NULL != m_ct)
+    {
+        try
+        {
+            attr.get_write_value(attr_growFactor_write);
+            m_camera->getFrameBuilder()->setGrowFactor(attr_growFactor_write);
+			yat4tango::PropertyHelper::set_property(this, "MemorizedGrowFactor", attr_growFactor_write);
+        }
+        catch (Tango::DevFailed& df)
+        {
+            ERROR_STREAM << df << endl;
+            //- rethrow exception
+            Tango::Except::re_throw_exception(df,
+                                              "TANGO_DEVICE_ERROR",
+                                              string(df.errors[0].desc).c_str(),
+                                              "SimulatorCCD::write_growFactor");
+        }
+        catch (lima::Exception& e)
+        {
+            ERROR_STREAM << e.getErrMsg() << endl;
+            //- throw exception
+            Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                           e.getErrMsg().c_str(),
+                                           "SimulatorCCD::write_growFactor");
+        }
+    }
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::write_growFactor
 }
 //--------------------------------------------------------
@@ -301,9 +451,50 @@ void SimulatorCCD::read_fillType(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "SimulatorCCD::read_fillType(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::read_fillType) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_fillType_read);
-	
+    DEBUG_STREAM << "SimulatorCCD::read_fillType(Tango::Attribute &attr) entering... " << endl;
+    try
+    {
+        std::string strFillType;
+        Simulator::FrameBuilder::FillType eFillType;
+        m_camera->getFrameBuilder()->getFillType(eFillType);
+
+        switch (eFillType)
+        {
+            case Simulator::FrameBuilder::Gauss:
+                strFillType = STR_GAUSS;
+                break;
+            case Simulator::FrameBuilder::Diffraction:
+                strFillType = STR_DIFFRACTION;
+                break;
+            default:
+            {
+                Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                               "Unexpected filltype value.",
+                                               "SimulatorCCD::read_fillType");
+            }
+        }
+
+
+        strcpy(*attr_fillType_read, strFillType.c_str());
+        attr.set_value(attr_fillType_read);
+    }
+    catch (Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          string(df.errors[0].desc).c_str(),
+                                          "SimulatorCCD::read_fillType");
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "SimulatorCCD::read_fillType");
+    }
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::read_fillType
 }
 //--------------------------------------------------------
@@ -322,8 +513,51 @@ void SimulatorCCD::write_fillType(Tango::WAttribute &attr)
 	Tango::DevString	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(SimulatorCCD::write_fillType) ENABLED START -----*/
-	
-	
+    DEBUG_STREAM << "SimulatorCCD::write_fillType(Tango::WAttribute &attr) entering... " << endl;
+    try
+    {
+		m_fillType = *attr_fillType_read;//memorize previous valid value
+        attr.get_write_value(attr_fillType_write);
+        string current = attr_fillType_write;
+        transform(current.begin(), current.end(), current.begin(), ::toupper);
+        if ((current != STR_GAUSS) &&
+            (current != STR_DIFFRACTION)
+            )
+        {
+            attr_fillType_write = const_cast<Tango::DevString>(m_fillType.c_str());
+            Tango::Except::throw_exception("CONFIGURATION_ERROR",
+                                           "Possible fillType values are:"
+                                           "\n- GAUSS"
+                                           "\n- DIFFRACTION",
+                                           "SimulatorCCD::write_fillType");
+        }
+
+        //- THIS IS AN AVAILABLE FILLTYPE
+        m_fillType = current;
+
+        if (STR_GAUSS == m_fillType)
+            m_camera->getFrameBuilder()->setFillType(Simulator::FrameBuilder::Gauss);
+        else if (STR_DIFFRACTION == m_fillType)
+            m_camera->getFrameBuilder()->setFillType(Simulator::FrameBuilder::Diffraction);
+        yat4tango::PropertyHelper::set_property(this, "MemorizedFillType", m_fillType);
+    }
+    catch (Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          string(df.errors[0].desc).c_str(),
+                                          "SimulatorCCD::write_fillType");
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "SimulatorCCD::write_fillType");
+    }
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::write_fillType
 }
 //--------------------------------------------------------
@@ -339,9 +573,29 @@ void SimulatorCCD::read_xOffset(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "SimulatorCCD::read_xOffset(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::read_xOffset) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_xOffset_read);
-	
+	DEBUG_STREAM << "SimulatorCCD::read_xOffset(Tango::Attribute &attr) entering... "<< endl;
+
+   try
+    {
+        attr.set_value(&attr_xOffset_write);
+    }
+    catch (Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          string(df.errors[0].desc).c_str(),
+                                          "SimulatorCCD::read_xOffset");
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "SimulatorCCD::read_xOffset");
+    }
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::read_xOffset
 }
 //--------------------------------------------------------
@@ -360,8 +614,29 @@ void SimulatorCCD::write_xOffset(Tango::WAttribute &attr)
 	Tango::DevDouble	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(SimulatorCCD::write_xOffset) ENABLED START -----*/
-	
-	
+	DEBUG_STREAM << "SimulatorCCD::write_xOffset(Tango::WAttribute &attr) entering... "<< endl;
+  try
+  {
+      attr.get_write_value(attr_xOffset_write);
+      m_camera->computeNewXOffset(attr_xOffset_write);
+  }
+  catch (Tango::DevFailed& df)
+  {
+      ERROR_STREAM << df << endl;
+      //- rethrow exception
+      Tango::Except::re_throw_exception(df,
+                                        "TANGO_DEVICE_ERROR",
+                                        string(df.errors[0].desc).c_str(),
+                                        "SimulatorCCD::write_xOffset");
+  }
+  catch (Exception& e)
+  {
+      ERROR_STREAM << e.getErrMsg() << endl;
+      //- throw exception
+      Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                     e.getErrMsg().c_str(),
+                                     "SimulatorCCD::write_xOffset");
+  }
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::write_xOffset
 }
 //--------------------------------------------------------
@@ -377,9 +652,29 @@ void SimulatorCCD::read_yOffset(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "SimulatorCCD::read_yOffset(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::read_yOffset) ENABLED START -----*/
-	//	Set the attribute value
-	attr.set_value(attr_yOffset_read);
-	
+	DEBUG_STREAM << "SimulatorCCD::read_yOffset(Tango::Attribute &attr) entering... "<< endl;
+
+    try
+    {
+        attr.set_value(&attr_yOffset_write);
+    }
+    catch (Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          string(df.errors[0].desc).c_str(),
+                                          "SimulatorCCD::read_yOffset");
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "SimulatorCCD::read_yOffset");
+    }
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::read_yOffset
 }
 //--------------------------------------------------------
@@ -398,8 +693,30 @@ void SimulatorCCD::write_yOffset(Tango::WAttribute &attr)
 	Tango::DevDouble	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(SimulatorCCD::write_yOffset) ENABLED START -----*/
-	
-	
+	DEBUG_STREAM << "SimulatorCCD::write_yOffset(Tango::WAttribute &attr) entering... "<< endl;
+
+    try
+    {
+        attr.get_write_value(attr_yOffset_write);
+        m_camera->computeNewYOffset(attr_yOffset_write);
+    }
+    catch (Tango::DevFailed& df)
+    {
+        ERROR_STREAM << df << endl;
+        //- rethrow exception
+        Tango::Except::re_throw_exception(df,
+                                          "TANGO_DEVICE_ERROR",
+                                          string(df.errors[0].desc).c_str(),
+                                          "SimulatorCCD::write_yOffset");
+    }
+    catch (Exception& e)
+    {
+        ERROR_STREAM << e.getErrMsg() << endl;
+        //- throw exception
+        Tango::Except::throw_exception("TANGO_DEVICE_ERROR",
+                                       e.getErrMsg().c_str(),
+                                       "SimulatorCCD::write_yOffset");
+    }
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::write_yOffset
 }
 
@@ -421,8 +738,32 @@ void SimulatorCCD::add_dynamic_attributes()
 
 
 /*----- PROTECTED REGION ID(SimulatorCCD::namespace_ending) ENABLED START -----*/
+Tango::DevState SimulatorCCD::dev_state()
+{
+    Tango::DevState argout = DeviceImpl::dev_state();
+    DEBUG_STREAM << "SimulatorCCD::dev_state(): entering... !" << endl;
+    //    Add your own code to control device here
+    stringstream DeviceStatus;
+    DeviceStatus << "";
+    Tango::DevState DeviceState = Tango::STANDBY;
+    if (!m_is_device_initialized)
+    {
+        DeviceState = Tango::FAULT;
+        DeviceStatus << m_status_message.str();
+    }
+    else
+    {
+        // state & status are retrieved from Factory, Factory is updated by Generic device
+        DeviceState = ControlFactory::instance().get_state();
+        DeviceStatus << ControlFactory::instance().get_status();
+    }
 
-//	Additional Methods
+    set_state(DeviceState);
+    set_status(DeviceStatus.str());
 
+    argout = DeviceState;
+    DEBUG_STREAM << "SimulatorCCD::dev_state() ending... " << endl;
+    return argout;
+}
 /*----- PROTECTED REGION END -----*/	//	SimulatorCCD::namespace_ending
 } //	namespace
