@@ -296,7 +296,7 @@ namespace Layout_ns
 
 /*----- PROTECTED REGION END -----*/	//	Layout::Additional Class Declarations
 
-class Layout : public Tango::Device_4Impl
+class Layout : public TANGO_BASE_CLASS
 {
 
 /*----- PROTECTED REGION ID(Layout::Data Members) ENABLED START -----*/
@@ -347,7 +347,7 @@ public:
 	Layout(Tango::DeviceClass *cl,const char *s,const char *d);
 	/**
 	 * The device object destructor.
-	 */	
+	 */
 	~Layout() {delete_device();};
 
 
@@ -380,6 +380,13 @@ public:
 	 */
 	//--------------------------------------------------------
 	virtual void read_attr_hardware(vector<long> &attr_list);
+	//--------------------------------------------------------
+	/*
+	 *	Method      : Layout::write_attr_hardware()
+	 *	Description : Hardware writing for attributes.
+	 */
+	//--------------------------------------------------------
+	virtual void write_attr_hardware(vector<long> &attr_list);
 
 /**
  *	Attribute version related methods
@@ -431,6 +438,7 @@ public:
 
 
 
+
 //	Command related methods
 public:
 	/**
@@ -452,6 +460,14 @@ public:
 	virtual void remove_operation(Tango::DevLong argin);
 	virtual bool is_RemoveOperation_allowed(const CORBA::Any &any);
 
+
+	//--------------------------------------------------------
+	/**
+	 *	Method      : Layout::add_dynamic_commands()
+	 *	Description : Add dynamic commands if any.
+	 */
+	//--------------------------------------------------------
+	void add_dynamic_commands();
 
 /*----- PROTECTED REGION ID(Layout::Additional Method prototypes) ENABLED START -----*/
 public:

@@ -508,6 +508,7 @@ bool Rixs::is_clusterCentroidY_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	return true;
 }
 
+
 //=================================================
 //		Commands Allowed Methods
 //=================================================
@@ -553,5 +554,12 @@ bool Rixs::is_RemoveOperation_allowed(TANGO_UNUSED(const CORBA::Any &any))
 	}
 	return true;
 }
+
+
+/*----- PROTECTED REGION ID(Rixs::RixsStateAllowed.AdditionalMethods) ENABLED START -----*/
+
+//	Additional Methods
+
+/*----- PROTECTED REGION END -----*/	//	Rixs::RixsStateAllowed.AdditionalMethods
 
 }	//	End of namespace

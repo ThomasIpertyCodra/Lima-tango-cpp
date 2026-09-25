@@ -170,8 +170,16 @@ bool SimulatorCCD::is_yOffset_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	return true;
 }
 
+
 //=================================================
 //		Commands Allowed Methods
 //=================================================
+
+
+/*----- PROTECTED REGION ID(SimulatorCCD::SimulatorCCDStateAllowed.AdditionalMethods) ENABLED START -----*/
+
+//	Additional Methods
+
+/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::SimulatorCCDStateAllowed.AdditionalMethods
 
 }	//	End of namespace

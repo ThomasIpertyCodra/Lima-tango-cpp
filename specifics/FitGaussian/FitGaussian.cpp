@@ -118,7 +118,7 @@ namespace FitGaussian_ns
  */
 //--------------------------------------------------------
 FitGaussian::FitGaussian(Tango::DeviceClass *cl, string &s)
- : Tango::Device_4Impl(cl, s.c_str())
+ : TANGO_BASE_CLASS(cl, s.c_str())
 {
 	/*----- PROTECTED REGION ID(FitGaussian::constructor_1) ENABLED START -----*/
 	init_device();
@@ -127,7 +127,7 @@ FitGaussian::FitGaussian(Tango::DeviceClass *cl, string &s)
 }
 //--------------------------------------------------------
 FitGaussian::FitGaussian(Tango::DeviceClass *cl, const char *s)
- : Tango::Device_4Impl(cl, s)
+ : TANGO_BASE_CLASS(cl, s)
 {
 	/*----- PROTECTED REGION ID(FitGaussian::constructor_2) ENABLED START -----*/
 	init_device();
@@ -136,7 +136,7 @@ FitGaussian::FitGaussian(Tango::DeviceClass *cl, const char *s)
 }
 //--------------------------------------------------------
 FitGaussian::FitGaussian(Tango::DeviceClass *cl, const char *s, const char *d)
- : Tango::Device_4Impl(cl, s, d)
+ : TANGO_BASE_CLASS(cl, s, d)
 {
 	/*----- PROTECTED REGION ID(FitGaussian::constructor_3) ENABLED START -----*/
 	init_device();
@@ -210,7 +210,6 @@ void FitGaussian::init_device()
 	//	Get the device properties from database
 	get_device_property();
 	
-
 	/*----- PROTECTED REGION ID(FitGaussian::init_device) ENABLED START -----*/
 
 
@@ -575,7 +574,7 @@ void FitGaussian::get_device_property()
 //--------------------------------------------------------
 void FitGaussian::always_executed_hook()
 {
-	INFO_STREAM << "FitGaussian::always_executed_hook()  " << device_name << endl;
+	DEBUG_STREAM << "FitGaussian::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(FitGaussian::always_executed_hook) ENABLED START -----*/
 
     yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
@@ -625,6 +624,21 @@ void FitGaussian::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 	//	Add your own code here
 
 /*----- PROTECTED REGION END -----*/	//	FitGaussian::read_attr_hardware
+}
+//--------------------------------------------------------
+/**
+ *	Method      : FitGaussian::write_attr_hardware()
+ *	Description : Hardware writing for attributes
+ */
+//--------------------------------------------------------
+void FitGaussian::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "FitGaussian::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(FitGaussian::write_attr_hardware) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	FitGaussian::write_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -2171,8 +2185,23 @@ Tango::DevState FitGaussian::dev_state()
 /*----- PROTECTED REGION END -----*/	//	FitGaussian::dev_state
 	set_state(argout);    // Give the state to Tango.
 	if (argout!=Tango::ALARM)
-		DeviceImpl::dev_state();
+		Tango::DeviceImpl::dev_state();
 	return get_state();  // Return it after Tango management.
+}
+//--------------------------------------------------------
+/**
+ *	Method      : FitGaussian::add_dynamic_commands()
+ *	Description : Create the dynamic commands if any
+ *                for specified device.
+ */
+//--------------------------------------------------------
+void FitGaussian::add_dynamic_commands()
+{
+	/*----- PROTECTED REGION ID(FitGaussian::add_dynamic_commands) ENABLED START -----*/
+	
+	//	Add your own code to create and add dynamic commands if any
+	
+	/*----- PROTECTED REGION END -----*/	//	FitGaussian::add_dynamic_commands
 }
 
 /*----- PROTECTED REGION ID(FitGaussian::namespace_ending) ENABLED START -----*/

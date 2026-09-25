@@ -87,7 +87,7 @@ namespace SimulatorCCD_ns
  */
 //--------------------------------------------------------
 SimulatorCCD::SimulatorCCD(Tango::DeviceClass *cl, string &s)
- : Tango::Device_4Impl(cl, s.c_str())
+ : TANGO_BASE_CLASS(cl, s.c_str())
 {
 	/*----- PROTECTED REGION ID(SimulatorCCD::constructor_1) ENABLED START -----*/
 	init_device();
@@ -96,7 +96,7 @@ SimulatorCCD::SimulatorCCD(Tango::DeviceClass *cl, string &s)
 }
 //--------------------------------------------------------
 SimulatorCCD::SimulatorCCD(Tango::DeviceClass *cl, const char *s)
- : Tango::Device_4Impl(cl, s)
+ : TANGO_BASE_CLASS(cl, s)
 {
 	/*----- PROTECTED REGION ID(SimulatorCCD::constructor_2) ENABLED START -----*/
 	init_device();
@@ -105,7 +105,7 @@ SimulatorCCD::SimulatorCCD(Tango::DeviceClass *cl, const char *s)
 }
 //--------------------------------------------------------
 SimulatorCCD::SimulatorCCD(Tango::DeviceClass *cl, const char *s, const char *d)
- : Tango::Device_4Impl(cl, s, d)
+ : TANGO_BASE_CLASS(cl, s, d)
 {
 	/*----- PROTECTED REGION ID(SimulatorCCD::constructor_3) ENABLED START -----*/
 	init_device();
@@ -154,7 +154,6 @@ void SimulatorCCD::init_device()
 	//	Get the device properties from database
 	get_device_property();
 	
-
 	/*----- PROTECTED REGION ID(SimulatorCCD::init_device) ENABLED START -----*/
     CREATE_SCALAR_ATTRIBUTE(attr_growFactor_read);
     CREATE_DEVSTRING_ATTRIBUTE(attr_fillType_read,  MAX_ATTRIBUTE_STRING_LENGTH);
@@ -292,7 +291,7 @@ void SimulatorCCD::get_device_property()
 //--------------------------------------------------------
 void SimulatorCCD::always_executed_hook()
 {
-	INFO_STREAM << "SimulatorCCD::always_executed_hook()  " << device_name << endl;
+	DEBUG_STREAM << "SimulatorCCD::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(SimulatorCCD::always_executed_hook) ENABLED START -----*/
     DEBUG_STREAM << "SimulatorCCD::always_executed_hook() entering... " << endl;
 
@@ -345,6 +344,21 @@ void SimulatorCCD::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
     DEBUG_STREAM << "SimulatorCCD::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
     //    Add your own code here
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::read_attr_hardware
+}
+//--------------------------------------------------------
+/**
+ *	Method      : SimulatorCCD::write_attr_hardware()
+ *	Description : Hardware writing for attributes
+ */
+//--------------------------------------------------------
+void SimulatorCCD::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "SimulatorCCD::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(SimulatorCCD::write_attr_hardware) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::write_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -736,6 +750,21 @@ void SimulatorCCD::add_dynamic_attributes()
 	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::add_dynamic_attributes
 }
 
+//--------------------------------------------------------
+/**
+ *	Method      : SimulatorCCD::add_dynamic_commands()
+ *	Description : Create the dynamic commands if any
+ *                for specified device.
+ */
+//--------------------------------------------------------
+void SimulatorCCD::add_dynamic_commands()
+{
+	/*----- PROTECTED REGION ID(SimulatorCCD::add_dynamic_commands) ENABLED START -----*/
+	
+	//	Add your own code to create and add dynamic commands if any
+	
+	/*----- PROTECTED REGION END -----*/	//	SimulatorCCD::add_dynamic_commands
+}
 
 /*----- PROTECTED REGION ID(SimulatorCCD::namespace_ending) ENABLED START -----*/
 Tango::DevState SimulatorCCD::dev_state()

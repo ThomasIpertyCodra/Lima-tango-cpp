@@ -69,7 +69,7 @@ namespace SimulatorCCD_ns
 
 /*----- PROTECTED REGION END -----*/	//	SimulatorCCD::Additional Class Declarations
 
-class SimulatorCCD : public Tango::Device_4Impl
+class SimulatorCCD : public TANGO_BASE_CLASS
 {
 
 /*----- PROTECTED REGION ID(SimulatorCCD::Data Members) ENABLED START -----*/
@@ -128,7 +128,7 @@ public:
 	SimulatorCCD(Tango::DeviceClass *cl,const char *s,const char *d);
 	/**
 	 * The device object destructor.
-	 */	
+	 */
 	~SimulatorCCD() {delete_device();};
 
 
@@ -161,6 +161,13 @@ public:
 	 */
 	//--------------------------------------------------------
 	virtual void read_attr_hardware(vector<long> &attr_list);
+	//--------------------------------------------------------
+	/*
+	 *	Method      : SimulatorCCD::write_attr_hardware()
+	 *	Description : Hardware writing for attributes.
+	 */
+	//--------------------------------------------------------
+	virtual void write_attr_hardware(vector<long> &attr_list);
 
 /**
  *	Attribute growFactor related methods
@@ -214,9 +221,18 @@ public:
 
 
 
+
 //	Command related methods
 public:
 
+
+	//--------------------------------------------------------
+	/**
+	 *	Method      : SimulatorCCD::add_dynamic_commands()
+	 *	Description : Add dynamic commands if any.
+	 */
+	//--------------------------------------------------------
+	void add_dynamic_commands();
 
 /*----- PROTECTED REGION ID(SimulatorCCD::Additional Method prototypes) ENABLED START -----*/
 

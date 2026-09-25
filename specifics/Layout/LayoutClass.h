@@ -200,6 +200,7 @@ class LayoutClass : public Tango::DeviceClass
 		static LayoutClass *_instance;
 		void command_factory();
 		void attribute_factory(vector<Tango::Attr *> &);
+		void pipe_factory();
 		void write_class_property();
 		void set_default_property();
 		void get_class_property();

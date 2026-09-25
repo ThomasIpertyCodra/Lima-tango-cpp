@@ -156,8 +156,16 @@ bool Mask::is_maskImage_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	return true;
 }
 
+
 //=================================================
 //		Commands Allowed Methods
 //=================================================
+
+
+/*----- PROTECTED REGION ID(Mask::MaskStateAllowed.AdditionalMethods) ENABLED START -----*/
+
+//	Additional Methods
+
+/*----- PROTECTED REGION END -----*/	//	Mask::MaskStateAllowed.AdditionalMethods
 
 }	//	End of namespace

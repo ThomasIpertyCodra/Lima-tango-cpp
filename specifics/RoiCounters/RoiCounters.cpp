@@ -86,7 +86,7 @@ namespace RoiCounters_ns
  */
 //--------------------------------------------------------
 RoiCounters::RoiCounters(Tango::DeviceClass *cl, string &s)
- : Tango::Device_4Impl(cl, s.c_str()), m_dim(this)
+ : TANGO_BASE_CLASS(cl, s.c_str())
 {
 	/*----- PROTECTED REGION ID(RoiCounters::constructor_1) ENABLED START -----*/
 	init_device();
@@ -95,7 +95,7 @@ RoiCounters::RoiCounters(Tango::DeviceClass *cl, string &s)
 }
 //--------------------------------------------------------
 RoiCounters::RoiCounters(Tango::DeviceClass *cl, const char *s)
- : Tango::Device_4Impl(cl, s), m_dim(this)
+ : TANGO_BASE_CLASS(cl, s)
 {
 	/*----- PROTECTED REGION ID(RoiCounters::constructor_2) ENABLED START -----*/
 	init_device();
@@ -104,7 +104,7 @@ RoiCounters::RoiCounters(Tango::DeviceClass *cl, const char *s)
 }
 //--------------------------------------------------------
 RoiCounters::RoiCounters(Tango::DeviceClass *cl, const char *s, const char *d)
- : Tango::Device_4Impl(cl, s, d), m_dim(this)
+ : TANGO_BASE_CLASS(cl, s, d)
 {
 	/*----- PROTECTED REGION ID(RoiCounters::constructor_3) ENABLED START -----*/
 	init_device();
@@ -160,7 +160,6 @@ void RoiCounters::init_device()
 	//	Get the device properties from database
 	get_device_property();
 	
-
 	/*----- PROTECTED REGION ID(RoiCounters::init_device) ENABLED START -----*/
 
 
@@ -558,7 +557,7 @@ void RoiCounters::get_device_property()
 //--------------------------------------------------------
 void RoiCounters::always_executed_hook()
 {
-	INFO_STREAM << "RoiCounters::always_executed_hook()  " << device_name << endl;
+	DEBUG_STREAM << "RoiCounters::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(RoiCounters::always_executed_hook) ENABLED START -----*/
 
 	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
@@ -624,6 +623,21 @@ void RoiCounters::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 	}
 
 /*----- PROTECTED REGION END -----*/	//	RoiCounters::read_attr_hardware
+}
+//--------------------------------------------------------
+/**
+ *	Method      : RoiCounters::write_attr_hardware()
+ *	Description : Hardware writing for attributes
+ */
+//--------------------------------------------------------
+void RoiCounters::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "RoiCounters::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(RoiCounters::write_attr_hardware) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	RoiCounters::write_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -829,8 +843,23 @@ Tango::DevState RoiCounters::dev_state()
 /*----- PROTECTED REGION END -----*/	//	RoiCounters::dev_state
 	set_state(argout);    // Give the state to Tango.
 	if (argout!=Tango::ALARM)
-		DeviceImpl::dev_state();
+		Tango::DeviceImpl::dev_state();
 	return get_state();  // Return it after Tango management.
+}
+//--------------------------------------------------------
+/**
+ *	Method      : RoiCounters::add_dynamic_commands()
+ *	Description : Create the dynamic commands if any
+ *                for specified device.
+ */
+//--------------------------------------------------------
+void RoiCounters::add_dynamic_commands()
+{
+	/*----- PROTECTED REGION ID(RoiCounters::add_dynamic_commands) ENABLED START -----*/
+	
+	//	Add your own code to create and add dynamic commands if any
+	
+	/*----- PROTECTED REGION END -----*/	//	RoiCounters::add_dynamic_commands
 }
 
 /*----- PROTECTED REGION ID(RoiCounters::namespace_ending) ENABLED START -----*/

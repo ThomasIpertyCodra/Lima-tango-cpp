@@ -181,6 +181,7 @@ bool Layout::is_operationsList_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	return true;
 }
 
+
 //=================================================
 //		Commands Allowed Methods
 //=================================================
@@ -226,5 +227,12 @@ bool Layout::is_RemoveOperation_allowed(TANGO_UNUSED(const CORBA::Any &any))
 	}
 	return true;
 }
+
+
+/*----- PROTECTED REGION ID(Layout::LayoutStateAllowed.AdditionalMethods) ENABLED START -----*/
+
+//	Additional Methods
+
+/*----- PROTECTED REGION END -----*/	//	Layout::LayoutStateAllowed.AdditionalMethods
 
 }	//	End of namespace

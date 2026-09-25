@@ -123,8 +123,16 @@ bool RoiCounters::is_operationsList_allowed(TANGO_UNUSED(Tango::AttReqType type)
 	return true;
 }
 
+
 //=================================================
 //		Commands Allowed Methods
 //=================================================
+
+
+/*----- PROTECTED REGION ID(RoiCounters::RoiCountersStateAllowed.AdditionalMethods) ENABLED START -----*/
+
+//	Additional Methods
+
+/*----- PROTECTED REGION END -----*/	//	RoiCounters::RoiCountersStateAllowed.AdditionalMethods
 
 }	//	End of namespace

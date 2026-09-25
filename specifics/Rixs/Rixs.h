@@ -661,7 +661,7 @@ namespace Rixs_ns
 
 /*----- PROTECTED REGION END -----*/	//	Rixs::Additional Class Declarations
 
-class Rixs : public Tango::Device_4Impl
+class Rixs : public TANGO_BASE_CLASS
 {
 
 /*----- PROTECTED REGION ID(Rixs::Data Members) ENABLED START -----*/
@@ -726,7 +726,7 @@ public:
 	Rixs(Tango::DeviceClass *cl,const char *s,const char *d);
 	/**
 	 * The device object destructor.
-	 */	
+	 */
 	~Rixs() {delete_device();};
 
 
@@ -759,6 +759,13 @@ public:
 	 */
 	//--------------------------------------------------------
 	virtual void read_attr_hardware(vector<long> &attr_list);
+	//--------------------------------------------------------
+	/*
+	 *	Method      : Rixs::write_attr_hardware()
+	 *	Description : Hardware writing for attributes.
+	 */
+	//--------------------------------------------------------
+	virtual void write_attr_hardware(vector<long> &attr_list);
 
 /**
  *	Attribute version related methods
@@ -918,6 +925,7 @@ public:
 
 
 
+
 //	Command related methods
 public:
 	/**
@@ -939,6 +947,14 @@ public:
 	virtual void remove_operation(Tango::DevLong argin);
 	virtual bool is_RemoveOperation_allowed(const CORBA::Any &any);
 
+
+	//--------------------------------------------------------
+	/**
+	 *	Method      : Rixs::add_dynamic_commands()
+	 *	Description : Add dynamic commands if any.
+	 */
+	//--------------------------------------------------------
+	void add_dynamic_commands();
 
 /*----- PROTECTED REGION ID(Rixs::Additional Method prototypes) ENABLED START -----*/
 public:

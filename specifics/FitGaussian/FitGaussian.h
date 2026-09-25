@@ -106,7 +106,7 @@ namespace FitGaussian_ns
 
 /*----- PROTECTED REGION END -----*/	//	FitGaussian::Additional Class Declarations
 
-class FitGaussian : public Tango::Device_4Impl
+class FitGaussian : public TANGO_BASE_CLASS
 {
 
 /*----- PROTECTED REGION ID(FitGaussian::Data Members) ENABLED START -----*/
@@ -215,7 +215,7 @@ public:
 	FitGaussian(Tango::DeviceClass *cl,const char *s,const char *d);
 	/**
 	 * The device object destructor.
-	 */	
+	 */
 	~FitGaussian() {delete_device();};
 
 
@@ -248,6 +248,13 @@ public:
 	 */
 	//--------------------------------------------------------
 	virtual void read_attr_hardware(vector<long> &attr_list);
+	//--------------------------------------------------------
+	/*
+	 *	Method      : FitGaussian::write_attr_hardware()
+	 *	Description : Hardware writing for attributes.
+	 */
+	//--------------------------------------------------------
+	virtual void write_attr_hardware(vector<long> &attr_list);
 
 /**
  *	Attribute version related methods
@@ -576,6 +583,7 @@ public:
 
 
 
+
 //	Command related methods
 public:
 	/**
@@ -586,6 +594,14 @@ public:
 	 */
 	virtual Tango::DevState dev_state();
 
+
+	//--------------------------------------------------------
+	/**
+	 *	Method      : FitGaussian::add_dynamic_commands()
+	 *	Description : Add dynamic commands if any.
+	 */
+	//--------------------------------------------------------
+	void add_dynamic_commands();
 
 /*----- PROTECTED REGION ID(FitGaussian::Additional Method prototypes) ENABLED START -----*/
 public:

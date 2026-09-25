@@ -89,7 +89,7 @@ namespace Mask_ns
 
 /*----- PROTECTED REGION END -----*/	//	Mask::Additional Class Declarations
 
-class Mask : public Tango::Device_4Impl
+class Mask : public TANGO_BASE_CLASS
 {
 
 /*----- PROTECTED REGION ID(Mask::Data Members) ENABLED START -----*/
@@ -135,7 +135,7 @@ public:
 	Mask(Tango::DeviceClass *cl,const char *s,const char *d);
 	/**
 	 * The device object destructor.
-	 */	
+	 */
 	~Mask() {delete_device();};
 
 
@@ -168,6 +168,13 @@ public:
 	 */
 	//--------------------------------------------------------
 	virtual void read_attr_hardware(vector<long> &attr_list);
+	//--------------------------------------------------------
+	/*
+	 *	Method      : Mask::write_attr_hardware()
+	 *	Description : Hardware writing for attributes.
+	 */
+	//--------------------------------------------------------
+	virtual void write_attr_hardware(vector<long> &attr_list);
 
 /**
  *	Attribute version related methods
@@ -218,6 +225,7 @@ public:
 
 
 
+
 //	Command related methods
 public:
 	/**
@@ -228,6 +236,14 @@ public:
 	 */
 	virtual Tango::DevState dev_state();
 
+
+	//--------------------------------------------------------
+	/**
+	 *	Method      : Mask::add_dynamic_commands()
+	 *	Description : Add dynamic commands if any.
+	 */
+	//--------------------------------------------------------
+	void add_dynamic_commands();
 
 /*----- PROTECTED REGION ID(Mask::Additional Method prototypes) ENABLED START -----*/
 public:

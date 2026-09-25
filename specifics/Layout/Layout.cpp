@@ -91,7 +91,7 @@ namespace Layout_ns
  */
 //--------------------------------------------------------
 Layout::Layout(Tango::DeviceClass *cl, string &s)
- : Tango::Device_4Impl(cl, s.c_str())
+ : TANGO_BASE_CLASS(cl, s.c_str())
 {
 	/*----- PROTECTED REGION ID(Layout::constructor_1) ENABLED START -----*/
 	init_device();
@@ -100,7 +100,7 @@ Layout::Layout(Tango::DeviceClass *cl, string &s)
 }
 //--------------------------------------------------------
 Layout::Layout(Tango::DeviceClass *cl, const char *s)
- : Tango::Device_4Impl(cl, s)
+ : TANGO_BASE_CLASS(cl, s)
 {
 	/*----- PROTECTED REGION ID(Layout::constructor_2) ENABLED START -----*/
 	init_device();
@@ -109,7 +109,7 @@ Layout::Layout(Tango::DeviceClass *cl, const char *s)
 }
 //--------------------------------------------------------
 Layout::Layout(Tango::DeviceClass *cl, const char *s, const char *d)
- : Tango::Device_4Impl(cl, s, d)
+ : TANGO_BASE_CLASS(cl, s, d)
 {
 	/*----- PROTECTED REGION ID(Layout::constructor_3) ENABLED START -----*/
 	init_device();
@@ -160,7 +160,6 @@ void Layout::init_device()
 	//	Get the device properties from database
 	get_device_property();
 	
-
 	/*----- PROTECTED REGION ID(Layout::init_device) ENABLED START -----*/
 
 	
@@ -355,7 +354,7 @@ void Layout::get_device_property()
 //--------------------------------------------------------
 void Layout::always_executed_hook()
 {
-	INFO_STREAM << "Layout::always_executed_hook()  " << device_name << endl;
+	DEBUG_STREAM << "Layout::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(Layout::always_executed_hook) ENABLED START -----*/
 
     yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
@@ -407,6 +406,21 @@ void Layout::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
     //	Add your own code here
 
 /*----- PROTECTED REGION END -----*/	//	Layout::read_attr_hardware
+}
+//--------------------------------------------------------
+/**
+ *	Method      : Layout::write_attr_hardware()
+ *	Description : Hardware writing for attributes
+ */
+//--------------------------------------------------------
+void Layout::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "Layout::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(Layout::write_attr_hardware) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	Layout::write_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -747,6 +761,21 @@ void Layout::remove_operation(Tango::DevLong argin)
     }
 
 /*----- PROTECTED REGION END -----*/	//	Layout::remove_operation
+}
+//--------------------------------------------------------
+/**
+ *	Method      : Layout::add_dynamic_commands()
+ *	Description : Create the dynamic commands if any
+ *                for specified device.
+ */
+//--------------------------------------------------------
+void Layout::add_dynamic_commands()
+{
+	/*----- PROTECTED REGION ID(Layout::add_dynamic_commands) ENABLED START -----*/
+	
+	//	Add your own code to create and add dynamic commands if any
+	
+	/*----- PROTECTED REGION END -----*/	//	Layout::add_dynamic_commands
 }
 
 /*----- PROTECTED REGION ID(Layout::namespace_ending) ENABLED START -----*/

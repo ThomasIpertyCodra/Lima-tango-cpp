@@ -87,7 +87,7 @@ namespace Mask_ns
  */
 //--------------------------------------------------------
 Mask::Mask(Tango::DeviceClass *cl, string &s)
- : Tango::Device_4Impl(cl, s.c_str())
+ : TANGO_BASE_CLASS(cl, s.c_str())
 {
 	/*----- PROTECTED REGION ID(Mask::constructor_1) ENABLED START -----*/
 	init_device();
@@ -96,7 +96,7 @@ Mask::Mask(Tango::DeviceClass *cl, string &s)
 }
 //--------------------------------------------------------
 Mask::Mask(Tango::DeviceClass *cl, const char *s)
- : Tango::Device_4Impl(cl, s)
+ : TANGO_BASE_CLASS(cl, s)
 {
 	/*----- PROTECTED REGION ID(Mask::constructor_2) ENABLED START -----*/
 	init_device();
@@ -105,7 +105,7 @@ Mask::Mask(Tango::DeviceClass *cl, const char *s)
 }
 //--------------------------------------------------------
 Mask::Mask(Tango::DeviceClass *cl, const char *s, const char *d)
- : Tango::Device_4Impl(cl, s, d)
+ : TANGO_BASE_CLASS(cl, s, d)
 {
 	/*----- PROTECTED REGION ID(Mask::constructor_3) ENABLED START -----*/
 	init_device();
@@ -163,7 +163,6 @@ void Mask::init_device()
 	//	Get the device properties from database
 	get_device_property();
 	
-
 	/*----- PROTECTED REGION ID(Mask::init_device) ENABLED START -----*/
 
 	CREATE_DEVSTRING_ATTRIBUTE(attr_version_read, 256);
@@ -309,7 +308,7 @@ void Mask::get_device_property()
 //--------------------------------------------------------
 void Mask::always_executed_hook()
 {
-	INFO_STREAM << "Mask::always_executed_hook()  " << device_name << endl;
+	DEBUG_STREAM << "Mask::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(Mask::always_executed_hook) ENABLED START -----*/
 
 	yat::AutoMutex<> _lock(ControlFactory::instance().get_global_mutex());
@@ -372,6 +371,21 @@ void Mask::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 	}
 
 /*----- PROTECTED REGION END -----*/	//	Mask::read_attr_hardware
+}
+//--------------------------------------------------------
+/**
+ *	Method      : Mask::write_attr_hardware()
+ *	Description : Hardware writing for attributes
+ */
+//--------------------------------------------------------
+void Mask::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "Mask::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(Mask::write_attr_hardware) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	Mask::write_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -655,8 +669,23 @@ Tango::DevState Mask::dev_state()
 /*----- PROTECTED REGION END -----*/	//	Mask::dev_state
 	set_state(argout);    // Give the state to Tango.
 	if (argout!=Tango::ALARM)
-		DeviceImpl::dev_state();
+		Tango::DeviceImpl::dev_state();
 	return get_state();  // Return it after Tango management.
+}
+//--------------------------------------------------------
+/**
+ *	Method      : Mask::add_dynamic_commands()
+ *	Description : Create the dynamic commands if any
+ *                for specified device.
+ */
+//--------------------------------------------------------
+void Mask::add_dynamic_commands()
+{
+	/*----- PROTECTED REGION ID(Mask::add_dynamic_commands) ENABLED START -----*/
+	
+	//	Add your own code to create and add dynamic commands if any
+	
+	/*----- PROTECTED REGION END -----*/	//	Mask::add_dynamic_commands
 }
 
 /*----- PROTECTED REGION ID(Mask::namespace_ending) ENABLED START -----*/

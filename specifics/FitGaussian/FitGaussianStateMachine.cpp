@@ -613,8 +613,16 @@ bool FitGaussian::is_ROIImage_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	return true;
 }
 
+
 //=================================================
 //		Commands Allowed Methods
 //=================================================
+
+
+/*----- PROTECTED REGION ID(FitGaussian::FitGaussianStateAllowed.AdditionalMethods) ENABLED START -----*/
+
+//	Additional Methods
+
+/*----- PROTECTED REGION END -----*/	//	FitGaussian::FitGaussianStateAllowed.AdditionalMethods
 
 }	//	End of namespace
