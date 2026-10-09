@@ -225,6 +225,21 @@ public:
 		{return (static_cast<Lambda *>(dev))->is_upperThreshold_allowed(ty);}
 };
 
+//	Attribute detectorPixelDepth class definition
+class detectorPixelDepthAttrib: public Tango::Attr
+{
+public:
+	detectorPixelDepthAttrib():Attr("detectorPixelDepth",
+			Tango::DEV_USHORT, Tango::READ_WRITE) {};
+	~detectorPixelDepthAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<Lambda *>(dev))->read_detectorPixelDepth(att);}
+	virtual void write(Tango::DeviceImpl *dev,Tango::WAttribute &att)
+		{(static_cast<Lambda *>(dev))->write_detectorPixelDepth(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<Lambda *>(dev))->is_detectorPixelDepth_allowed(ty);}
+};
+
 
 /**
  *	The LambdaClass singleton definition

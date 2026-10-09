@@ -663,6 +663,30 @@ void LambdaClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Memorized
 	att_list.push_back(upperthreshold);
 
+	//	Attribute : detectorPixelDepth
+	detectorPixelDepthAttrib	*detectorpixeldepth = new detectorPixelDepthAttrib();
+	Tango::UserDefaultAttrProp	detectorpixeldepth_prop;
+	detectorpixeldepth_prop.set_description("Pixel resolution in bits");
+	//	label	not set for detectorPixelDepth
+	//	unit	not set for detectorPixelDepth
+	//	standard_unit	not set for detectorPixelDepth
+	//	display_unit	not set for detectorPixelDepth
+	//	format	not set for detectorPixelDepth
+	//	max_value	not set for detectorPixelDepth
+	//	min_value	not set for detectorPixelDepth
+	//	max_alarm	not set for detectorPixelDepth
+	//	min_alarm	not set for detectorPixelDepth
+	//	max_warning	not set for detectorPixelDepth
+	//	min_warning	not set for detectorPixelDepth
+	//	delta_t	not set for detectorPixelDepth
+	//	delta_val	not set for detectorPixelDepth
+	
+	detectorpixeldepth->set_default_properties(detectorpixeldepth_prop);
+	//	Not Polled
+	detectorpixeldepth->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(detectorpixeldepth);
+
 
 	//	Create a list of static attributes
 	create_static_attribute_list(get_class_attr()->get_attr_list());

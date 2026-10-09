@@ -106,6 +106,7 @@ public:
 	Tango::DevBoolean	*attr_chargeSumming_read;
 	Tango::DevDouble	*attr_lowerThreshold_read;
 	Tango::DevDouble	*attr_upperThreshold_read;
+	Tango::DevUShort	*attr_detectorPixelDepth_read;
 
 //	Constructors and destructors
 public:
@@ -298,6 +299,16 @@ public:
 	virtual void read_upperThreshold(Tango::Attribute &attr);
 	virtual void write_upperThreshold(Tango::WAttribute &attr);
 	virtual bool is_upperThreshold_allowed(Tango::AttReqType type);
+/**
+ *	Attribute detectorPixelDepth related methods
+ *	Description: Pixel resolution in bits
+ *
+ *	Data type:	Tango::DevUShort
+ *	Attr type:	Scalar
+ */
+	virtual void read_detectorPixelDepth(Tango::Attribute &attr);
+	virtual void write_detectorPixelDepth(Tango::WAttribute &attr);
+	virtual bool is_detectorPixelDepth_allowed(Tango::AttReqType type);
 
 
 	//--------------------------------------------------------

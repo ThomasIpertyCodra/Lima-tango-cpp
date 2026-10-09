@@ -84,6 +84,7 @@ namespace Lambda_ns
 //  chargeSumming         |  Tango::DevBoolean	Scalar
 //  lowerThreshold        |  Tango::DevDouble	Scalar
 //  upperThreshold        |  Tango::DevDouble	Scalar
+//  detectorPixelDepth    |  Tango::DevUShort	Scalar
 //================================================================
 
 namespace Lambda_ns
@@ -150,6 +151,7 @@ void Lambda::delete_device()
 	DELETE_SCALAR_ATTRIBUTE(attr_saturationFlag_read);
 	DELETE_SCALAR_ATTRIBUTE(attr_saturationThreshold_read);
 	DELETE_SCALAR_ATTRIBUTE(attr_chargeSumming_read);
+	DELETE_SCALAR_ATTRIBUTE(attr_detectorPixelDepth_read);
 
     m_is_device_initialized = false;
 
@@ -189,6 +191,7 @@ void Lambda::init_device()
 	CREATE_SCALAR_ATTRIBUTE(attr_saturationFlag_read);
 	CREATE_SCALAR_ATTRIBUTE(attr_saturationThreshold_read);
 	CREATE_SCALAR_ATTRIBUTE(attr_chargeSumming_read);
+	CREATE_SCALAR_ATTRIBUTE(attr_detectorPixelDepth_read);
     
     m_is_device_initialized = false;
 	m_has_hv_feature 		= false;
@@ -419,6 +422,7 @@ void Lambda::always_executed_hook()
 //--------------------------------------------------------
 void Lambda::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
+	DEBUG_STREAM << "Lambda::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(Lambda::read_attr_hardware) ENABLED START -----*/
 	
 	//	Add your own code
@@ -433,6 +437,7 @@ void Lambda::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 //--------------------------------------------------------
 void Lambda::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
+	DEBUG_STREAM << "Lambda::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(Lambda::write_attr_hardware) ENABLED START -----*/
 	
 	//	Add your own code
@@ -655,7 +660,7 @@ void Lambda::read_linearityCorrection(Tango::Attribute &attr)
 //--------------------------------------------------------
 void Lambda::write_linearityCorrection(Tango::WAttribute &attr)
 {
-	INFO_STREAM << "Lambda::write_linearityCorrection(Tango::WAttribute &attr) entering... " << endl;
+	DEBUG_STREAM << "Lambda::write_linearityCorrection(Tango::WAttribute &attr) entering... " << endl;
 	//	Retrieve write value
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
@@ -720,7 +725,7 @@ void Lambda::read_saturationFlag(Tango::Attribute &attr)
 //--------------------------------------------------------
 void Lambda::write_saturationFlag(Tango::WAttribute &attr)
 {
-	INFO_STREAM << "Lambda::write_saturationFlag(Tango::WAttribute &attr) entering... " << endl;
+	DEBUG_STREAM << "Lambda::write_saturationFlag(Tango::WAttribute &attr) entering... " << endl;
 	//	Retrieve write value
 	Tango::DevBoolean	w_val;
 	attr.get_write_value(w_val);
@@ -785,7 +790,7 @@ void Lambda::read_saturationThreshold(Tango::Attribute &attr)
 //--------------------------------------------------------
 void Lambda::write_saturationThreshold(Tango::WAttribute &attr)
 {
-	INFO_STREAM << "Lambda::write_saturationThreshold(Tango::WAttribute &attr) entering... " << endl;
+	DEBUG_STREAM << "Lambda::write_saturationThreshold(Tango::WAttribute &attr) entering... " << endl;
 	//	Retrieve write value
 	Tango::DevLong	w_val;
 	attr.get_write_value(w_val);
@@ -870,7 +875,7 @@ void Lambda::read_lowerThreshold(Tango::Attribute &attr)
 //--------------------------------------------------------
 void Lambda::write_lowerThreshold(Tango::WAttribute &attr)
 {
-	INFO_STREAM << "Lambda::write_lowerThreshold(Tango::WAttribute &attr) entering... " << endl;
+	DEBUG_STREAM << "Lambda::write_lowerThreshold(Tango::WAttribute &attr) entering... " << endl;
 	//	Retrieve write value
 	Tango::DevDouble	w_val;
 	attr.get_write_value(w_val);
@@ -938,7 +943,7 @@ void Lambda::read_upperThreshold(Tango::Attribute &attr)
 //--------------------------------------------------------
 void Lambda::write_upperThreshold(Tango::WAttribute &attr)
 {
-	INFO_STREAM << "Lambda::write_upperThreshold(Tango::WAttribute &attr) entering... " << endl;
+	DEBUG_STREAM << "Lambda::write_upperThreshold(Tango::WAttribute &attr) entering... " << endl;
 	//	Retrieve write value
 	Tango::DevDouble	w_val;
 	attr.get_write_value(w_val);
@@ -959,6 +964,104 @@ void Lambda::write_upperThreshold(Tango::WAttribute &attr)
 	}
 	
 	/*----- PROTECTED REGION END -----*/	//	Lambda::write_upperThreshold
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute detectorPixelDepth related method
+ *	Description: Pixel resolution in bits
+ *
+ *	Data type:	Tango::DevUShort
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void Lambda::read_detectorPixelDepth(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "Lambda::read_detectorPixelDepth(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(Lambda::read_detectorPixelDepth) ENABLED START -----*/
+	//	Set the attribute value
+	try
+	{
+		int pixelDepth = -1;
+		m_camera->getAcquisitionMode(pixelDepth);
+		switch(pixelDepth) {
+			case  1: *attr_detectorPixelDepth_read = 1;   break;
+			case  6: *attr_detectorPixelDepth_read = 6;  break;
+			case 12: *attr_detectorPixelDepth_read = 12; break;
+			case 24: *attr_detectorPixelDepth_read = 24; break;
+			default: break;
+		}
+		attr.set_value(attr_detectorPixelDepth_read);
+	}
+	catch (Tango::DevFailed& df)
+	{
+		manage_devfailed_exception(df, "read_detectorPixelDepth");
+	}
+	catch (lima::Exception& le)
+	{
+		manage_lima_exception(le, "read_detectorPixelDepth");
+	}
+
+
+	
+	
+	/*----- PROTECTED REGION END -----*/	//	Lambda::read_detectorPixelDepth
+}
+//--------------------------------------------------------
+/**
+ *	Write attribute detectorPixelDepth related method
+ *	Description: Pixel resolution in bits
+ *
+ *	Data type:	Tango::DevUShort
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void Lambda::write_detectorPixelDepth(Tango::WAttribute &attr)
+{
+	DEBUG_STREAM << "Lambda::write_detectorPixelDepth(Tango::WAttribute &attr) entering... " << endl;
+	//	Retrieve write value
+	Tango::DevUShort	w_val;
+	attr.get_write_value(w_val);
+	/*----- PROTECTED REGION ID(Lambda::write_detectorPixelDepth) ENABLED START -----*/
+	try
+	{
+		int pixelDepth = 24;
+		switch(w_val) {
+			case   1: pixelDepth = 1;  break;
+			case  6: pixelDepth = 6;  break;
+			case 12: pixelDepth = 12; break;
+			case 24: pixelDepth = 24; break;
+			default: break;
+		}
+		m_camera->setAcquisitionMode(pixelDepth);
+
+		// get the generic device name
+		std::string    device_name ;
+		std::string    class_name  = "LimaDetector";
+		std::string    server_name = Tango::Util::instance()->get_ds_name();
+		Tango::DbDatum db_datum = (Tango::Util::instance()->get_database())->get_device_name(server_name, class_name);
+		db_datum >> device_name;
+
+		// call the init interface command of LimaDetector to re-create the image and baseimage attributes
+		Tango::DeviceProxy * device_proxy = new Tango::DeviceProxy(device_name);
+
+		if(device_proxy != NULL)
+		{
+			INFO_STREAM << "calling the InitInterface method of LimaDetector..." << endl; 
+			Tango::DeviceData dout; 
+			dout = device_proxy->command_inout("InitInterface");
+			delete device_proxy;
+		}
+	}
+	catch (Tango::DevFailed& df)
+	{
+		manage_devfailed_exception(df, "write_detectorPixelDepth");
+	}
+	catch (lima::Exception& le)
+	{
+		manage_lima_exception(le, "write_detectorPixelDepth");
+	}
+	
+	/*----- PROTECTED REGION END -----*/	//	Lambda::write_detectorPixelDepth
 }
 
 //--------------------------------------------------------

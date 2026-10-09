@@ -60,10 +60,13 @@ bool Lambda::is_configFile_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if (get_state()==Tango::FAULT && !is_device_initialized())
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::configFileStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	Lambda::configFileStateAllowed_READ
 			return false;
 		}
@@ -85,10 +88,13 @@ bool Lambda::is_distortionCorrection_allowed(TANGO_UNUSED(Tango::AttReqType type
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if (get_state()==Tango::FAULT && !is_device_initialized())
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::distortionCorrectionStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	Lambda::distortionCorrectionStateAllowed_READ
 			return false;
 		}
@@ -110,10 +116,13 @@ bool Lambda::is_libraryVersion_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if (get_state()==Tango::FAULT && !is_device_initialized())
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::libraryVersionStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	Lambda::libraryVersionStateAllowed_READ
 			return false;
 		}
@@ -135,11 +144,14 @@ bool Lambda::is_highVoltage_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
+		if (get_state()==Tango::FAULT ||
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Lambda::highVoltageStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	Lambda::highVoltageStateAllowed_READ
 			return false;
 		}
@@ -161,11 +173,14 @@ bool Lambda::is_humidity_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
+		if (get_state()==Tango::FAULT ||
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Lambda::humidityStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	Lambda::humidityStateAllowed_READ
 			return false;
 		}
@@ -187,11 +202,14 @@ bool Lambda::is_temperature_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
+		if (get_state()==Tango::FAULT ||
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Lambda::temperatureStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	Lambda::temperatureStateAllowed_READ
 			return false;
 		}
@@ -212,7 +230,7 @@ bool Lambda::is_linearityCorrection_allowed(TANGO_UNUSED(Tango::AttReqType type)
 	if ( type!=Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for WRITE 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
+		if (get_state()==Tango::FAULT ||
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Lambda::linearityCorrectionStateAllowed_WRITE) ENABLED START -----*/
@@ -228,12 +246,14 @@ bool Lambda::is_linearityCorrection_allowed(TANGO_UNUSED(Tango::AttReqType type)
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
-			get_state()==Tango::RUNNING)
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::linearityCorrectionStateAllowed_READ) ENABLED START -----*/
-	
-	/*----- PROTECTED REGION END -----*/	//	Lambda::linearityCorrectionStateAllowed_READ
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
+		/*----- PROTECTED REGION END -----*/	//	Lambda::linearityCorrectionStateAllowed_READ
 			return false;
 		}
 		return true;
@@ -253,7 +273,7 @@ bool Lambda::is_saturationFlag_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type!=Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for WRITE 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
+		if (get_state()==Tango::FAULT ||
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Lambda::saturationFlagStateAllowed_WRITE) ENABLED START -----*/
@@ -269,11 +289,13 @@ bool Lambda::is_saturationFlag_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
-			get_state()==Tango::RUNNING)
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::saturationFlagStateAllowed_READ) ENABLED START -----*/
-	
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 	/*----- PROTECTED REGION END -----*/	//	Lambda::saturationFlagStateAllowed_READ
 			return false;
 		}
@@ -294,7 +316,7 @@ bool Lambda::is_saturationThreshold_allowed(TANGO_UNUSED(Tango::AttReqType type)
 	if ( type!=Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for WRITE 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
+		if (get_state()==Tango::FAULT ||
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Lambda::saturationThresholdStateAllowed_WRITE) ENABLED START -----*/
@@ -310,11 +332,13 @@ bool Lambda::is_saturationThreshold_allowed(TANGO_UNUSED(Tango::AttReqType type)
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if ((get_state()==Tango::FAULT && !is_device_initialized())||
-			get_state()==Tango::RUNNING)
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::saturationThresholdStateAllowed_READ) ENABLED START -----*/
-	
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 	/*----- PROTECTED REGION END -----*/	//	Lambda::saturationThresholdStateAllowed_READ
 			return false;
 		}
@@ -336,10 +360,13 @@ bool Lambda::is_chargeSumming_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if (get_state()==Tango::FAULT && !is_device_initialized())
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::chargeSummingStateAllowed_READ) ENABLED START -----*/
-	
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 	/*----- PROTECTED REGION END -----*/	//	Lambda::chargeSummingStateAllowed_READ
 			return false;
 		}
@@ -360,7 +387,7 @@ bool Lambda::is_lowerThreshold_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type!=Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for WRITE 
-		if ((get_state()==Tango::FAULT && !is_device_initialized()) ||
+		if (get_state()==Tango::FAULT ||
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Lambda::lowerThresholdStateAllowed_WRITE) ENABLED START -----*/
@@ -376,11 +403,13 @@ bool Lambda::is_lowerThreshold_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if ((get_state()==Tango::FAULT && !is_device_initialized()) ||
-			get_state()==Tango::RUNNING)
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::lowerThresholdStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	Lambda::lowerThresholdStateAllowed_READ
 			return false;
 		}
@@ -401,7 +430,7 @@ bool Lambda::is_upperThreshold_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type!=Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for WRITE 
-		if ((get_state()==Tango::FAULT && !is_device_initialized()) ||
+		if (get_state()==Tango::FAULT ||
 			get_state()==Tango::RUNNING)
 		{
 		/*----- PROTECTED REGION ID(Lambda::upperThresholdStateAllowed_WRITE) ENABLED START -----*/
@@ -417,12 +446,57 @@ bool Lambda::is_upperThreshold_allowed(TANGO_UNUSED(Tango::AttReqType type))
 	if ( type==Tango::READ_REQ )
 	{
 		//	Compare device state with not allowed states for READ 
-		if ((get_state()==Tango::FAULT && !is_device_initialized()) ||
-			get_state()==Tango::RUNNING)
+		if (get_state()==Tango::FAULT)
 		{
 		/*----- PROTECTED REGION ID(Lambda::upperThresholdStateAllowed_READ) ENABLED START -----*/
-		
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
 		/*----- PROTECTED REGION END -----*/	//	Lambda::upperThresholdStateAllowed_READ
+			return false;
+		}
+		return true;
+	}
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : Lambda::is_detectorPixelDepth_allowed()
+ *	Description : Execution allowed for detectorPixelDepth attribute
+ */
+//--------------------------------------------------------
+bool Lambda::is_detectorPixelDepth_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+	//	Check access type.
+	if ( type!=Tango::READ_REQ )
+	{
+		//	Compare device state with not allowed states for WRITE 
+		if (get_state()==Tango::FAULT ||
+			get_state()==Tango::RUNNING)
+		{
+		/*----- PROTECTED REGION ID(Lambda::detectorPixelDepthStateAllowed_WRITE) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	Lambda::detectorPixelDepthStateAllowed_WRITE
+			return false;
+		}
+		return true;
+	}
+	else
+
+	//	Check access type.
+	if ( type==Tango::READ_REQ )
+	{
+		//	Compare device state with not allowed states for READ 
+		if (get_state()==Tango::FAULT)
+		{
+		/*----- PROTECTED REGION ID(Lambda::detectorPixelDepthStateAllowed_READ) ENABLED START -----*/
+			if (get_state()==Tango::FAULT && is_device_initialized())
+			{
+				return true;
+			}
+	/*----- PROTECTED REGION END -----*/	//	Lambda::detectorPixelDepthStateAllowed_READ
 			return false;
 		}
 		return true;
